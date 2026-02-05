@@ -111,7 +111,7 @@ export default function IletisimPage() {
          {ADRES}
         </p>
         <a
-         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADRES)}`}
+         href="https://maps.app.goo.gl/xP4LWjiCzHSNWnWp7"
          target="_blank"
          rel="noopener noreferrer"
          className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"

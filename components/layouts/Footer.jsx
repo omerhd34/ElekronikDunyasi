@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { SiteLogo } from "./SiteLogo";
 
 const footerLinks = {
  kurumsal: [
   { href: "/biz-kimiz", label: "Biz Kimiz" },
   { href: "/iletisim", label: "İletişim" },
+  { href: "/sik-sorulan-sorular", label: "Sıkça Sorulan Sorular" },
   { href: "/iade-degisim", label: "İade & Değişim" },
  ],
  yasal: [
@@ -29,10 +31,8 @@ export function SiteFooter() {
    <div className="container px-4 py-12">
     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
      <div>
-      <h3 className="mb-4 font-semibold tracking-wide text-white">
-       ELEKTRONİK DÜNYASI
-      </h3>
-      <p className="text-sm text-emerald-200/80">
+      <SiteLogo />
+      <p className="text-sm text-emerald-200/80 mt-5">
        Elektronik dünyanızın güvenilir adresi.
       </p>
      </div>
