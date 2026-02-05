@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Truck, Headphones, ShieldCheck, Star, Users, Clock, Eye, Target, Globe, HeartHandshake, Zap, Laptop, Smartphone, Tablet, Watch } from "lucide-react";
@@ -49,8 +48,7 @@ const BizKimizPage = () => {
       <div className="relative group">
        <div className="absolute -inset-1 bg-linear-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
        <div className="relative rounded-2xl bg-card border aspect-video flex items-center justify-center overflow-hidden shadow-xl">
-        <Image
-         fill
+        <img
          src="/electronik-dunyasi.png"
          alt="Elektronik Dünyası Mağazası"
          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"

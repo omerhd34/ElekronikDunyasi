@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 const ADRES = "Mehmet Akif, Recep Ayan Cd. 23B, 34406 Çekmeköy/İstanbul";
 const TELEFON = "0546 219 72 21";
@@ -206,10 +205,9 @@ export default function IletisimPage() {
        </CardHeader>
        <CardContent>
         <div className="relative aspect-video w-full overflow-hidden rounded-xl">
-         <Image
+         <img
           src="/electronik-dunyasi.png"
           alt="Elektronik Dünyası dükkan fotoğrafı"
-          fill
           className="object-cover"
           sizes="(max-width: 1024px) 100vw, 60vw"
           priority

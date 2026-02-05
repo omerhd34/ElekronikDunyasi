@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Heart, ShoppingCart, Star, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/products";
@@ -47,12 +46,10 @@ export function ProductCard({ product }) {
     <Heart className="size-5" />
    </button>
 
-   {/* Image */}
    <Link href={`/urun/${slug}`} className="relative aspect-square overflow-hidden bg-gray-50">
-    <Image
+    <img
      src={image}
      alt={name}
-     fill
      className="object-cover transition-transform duration-500 group-hover:scale-110"
      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
     />
