@@ -2,6 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { SiteLayout } from "@/components/layouts/site-layout";
+import { FavoritesProvider } from "@/context/favorites-context";
+import { CartProvider } from "@/context/cart-context";
 
 export default function RoutersLayout({ children }) {
  const pathname = usePathname();
@@ -12,8 +14,12 @@ export default function RoutersLayout({ children }) {
  }
 
  return (
-  <div className="flex min-h-svh flex-col">
-   <SiteLayout>{children}</SiteLayout>
-  </div>
+  <FavoritesProvider>
+   <CartProvider>
+    <div className="flex min-h-svh flex-col">
+     <SiteLayout>{children}</SiteLayout>
+    </div>
+   </CartProvider>
+  </FavoritesProvider>
  );
 }

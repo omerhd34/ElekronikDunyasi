@@ -1,4 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
+'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
  Carousel,
  CarouselContent,
@@ -6,7 +10,6 @@ import {
  CarouselNext,
  CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,204 +18,349 @@ import {
  AccordionItem,
  AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ShoppingCart, Star, Truck, ShieldCheck, CreditCard, Phone } from "lucide-react";
+import { Truck, ShieldCheck, CreditCard, Phone, Sparkles, Star } from "lucide-react";
 
-const newProducts = [
- { id: 1, name: "iPhone 15 Pro Max", price: "84.999 ₺", image: "https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&w=800&q=80", category: "Telefon" },
- { id: 2, name: "MacBook Air M3", price: "42.999 ₺", image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80", category: "Bilgisayar" },
- { id: 3, name: "Sony WH-1000XM5", price: "12.499 ₺", image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80", category: "Kulaklık" },
- { id: 4, name: "Samsung Galaxy S24", price: "39.999 ₺", image: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=800&q=80", category: "Telefon" },
- { id: 5, name: "iPad Air 5", price: "19.999 ₺", image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=800&q=80", category: "Tablet" },
-];
+import { ProductCard } from "@/components/ProductCard";
+import { categoryInfo } from "@/lib/product-utils";
 
-const discountedProducts = [
- { id: 1, name: "Dyson V15 Detect", oldPrice: "29.999 ₺", price: "24.999 ₺", discount: "%15", image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80" },
- { id: 2, name: "LG 55' OLED TV", oldPrice: "65.000 ₺", price: "52.000 ₺", discount: "%20", image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80" },
- { id: 3, name: "JBL Flip 6", oldPrice: "4.500 ₺", price: "3.200 ₺", discount: "%28", image: "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&w=800&q=80" },
- { id: 4, name: "Logitech MX Master 3S", oldPrice: "3.800 ₺", price: "2.900 ₺", discount: "%23", image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=800&q=80" },
- { id: 5, name: "Apple Watch Series 9", oldPrice: "16.000 ₺", price: "13.500 ₺", discount: "%15", image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=800&q=80" },
-];
-
+const categories = Object.entries(categoryInfo);
 const faqs = [
- { id: "faq-1", q: "Kargom ne zaman ulaşır?", a: "Siparişleriniz 24 saat içinde kargoya verilir ve 1-3 iş günü içinde size ulaşır." },
- { id: "faq-2", q: "İade koşulları nelerdir?", a: "14 gün içinde, ambalajı açılmamış ürünleri koşulsuz iade edebilirsiniz." },
- { id: "faq-3", q: "Taksit seçenekleri var mı?", a: "Tüm kredi kartlarına peşin fiyatına 3 taksit veya vade farkıyla 9 taksit imkanı sunuyoruz." },
+ { id: "faq-1", q: "Kargom ne zaman ulaşır?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+ { id: "faq-2", q: "İade koşulları nelerdir?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+ { id: "faq-3", q: "Taksit seçenekleri var mı?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+ { id: "faq-4", q: "Ödeme ve Fatura İşlemleri", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+ { id: "faq-5", q: "Hangi kargo firmasıyla çalışıyorsunuz?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+ { id: "faq-6", q: "Kapıda ödeme var mı?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
+];
+
+const brands = [
+ { name: "Philips", className: "font-sans font-bold tracking-tight hover:text-blue-800" },
+ { name: "Stanley", className: "font-black tracking-tighter hover:text-yellow-500" },
+ { name: "Rodi Tools", className: "font-mono font-bold hover:text-gray-700" },
+ { name: "Sarex", className: "font-serif font-bold italic hover:text-red-600" },
+ { name: "Morlife", className: "font-light tracking-[0.2em] hover:text-green-600" },
+ { name: "Everton", className: "font-bold italic hover:text-blue-600" },
+ { name: "King", className: "font-black uppercase hover:text-red-500" },
+ { name: "POLYGOLD", className: "font-bold tracking-wider hover:text-yellow-600" },
+ { name: "Castu", className: "font-serif font-medium hover:text-purple-600" },
+ { name: "Lensun", className: "font-mono hover:text-orange-500" },
+ { name: "Vesus", className: "italic hover:text-indigo-500" },
+ { name: "Loosee", className: "font-bold tracking-tighter hover:text-pink-500" },
+ { name: "Car Pto", className: "font-mono font-black hover:text-slate-800" },
 ];
 
 export default function HomePage() {
+ const router = useRouter();
+ const [newProducts, setNewProducts] = useState([]);
+ const [discountedProducts, setDiscountedProducts] = useState([]);
+ const [featuredProducts, setFeaturedProducts] = useState([]);
+
+ useEffect(() => {
+  Promise.all([
+   fetch('/api/products?new=1').then((r) => (r.ok ? r.json() : [])),
+   fetch('/api/products?discounted=1').then((r) => (r.ok ? r.json() : [])),
+   fetch('/api/products?featured=1').then((r) => (r.ok ? r.json() : [])),
+  ]).then(([newList, discountedList, featuredList]) => {
+   setNewProducts(newList || []);
+   setDiscountedProducts(discountedList || []);
+   setFeaturedProducts(featuredList || []);
+  });
+ }, []);
+
  return (
-  <div className="min-h-screen bg-gray-50 pb-20">
+  <div className="min-h-screen bg-gray-50">
+   {/* HERO SECTION */}
+   <section className="relative overflow-hidden bg-slate-950 text-white">
+    <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_top_right,var(--tw-gradient-stops))] from-blue-500 via-slate-900 to-slate-950"></div>
 
-   {/* 1. HERO SECTION */}
-   <section className="bg-slate-950 text-white py-24 px-4">
-    <div className="max-w-[1400px] mx-auto text-center space-y-8">
-     <Badge variant="secondary" className="px-4 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 border-none">
-      YENİ SEZON TEKNOLOJİ
-     </Badge>
-     <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
-      ELEKTRONİK DÜNYASI
-     </h1>
-     <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-      Çekmeköy&apos;ün en güvenilir teknoloji adresi. En yeni telefonlar, bilgisayarlar ve ev elektroniği en uygun fiyatlarla burada.
-     </p>
-     <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6">
-      <Button size="xl" className="h-14 px-8 text-lg bg-white text-slate-950 hover:bg-gray-200 font-semibold">
-       Alışverişe Başla
-      </Button>
-      <Button
-       size="xl"
-       variant="outline"
-       className="h-14 px-8 text-lg bg-transparent text-white border-2 border-white hover:bg-white hover:text-slate-950 transition-colors font-semibold"
-      >
-       İletişime Geç
-      </Button>
-     </div>
-    </div>
-   </section>
+    <div className="container relative z-10 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24 mx-auto flex flex-col lg:flex-row items-center gap-8 lg:gap-12 w-full">
+     <div className="flex-1 text-center lg:text-left space-y-6 sm:space-y-8 w-full">
+      <Badge variant="outline" className="px-3 sm:px-4 py-1.5 text-xs sm:text-sm border-blue-500 text-blue-400 bg-blue-950/30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700 inline-flex items-center">
+       <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2 inline-block" /> YENİ SEZON TEKNOLOJİ
+      </Badge>
 
-   {/* 2. AVANTAJLAR BANDI */}
-   <section className="bg-white border-b shadow-sm relative z-10">
-    <div className="max-w-[1400px] mx-auto py-10 px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-     <div className="flex flex-col items-center gap-3 group cursor-pointer">
-      <div className="p-4 bg-blue-50 rounded-full text-blue-600 group-hover:scale-110 transition-transform"><Truck size={28} /></div>
-      <span className="font-bold text-gray-800 text-lg">Hızlı Kargo</span>
-     </div>
-     <div className="flex flex-col items-center gap-3 group cursor-pointer">
-      <div className="p-4 bg-green-50 rounded-full text-green-600 group-hover:scale-110 transition-transform"><ShieldCheck size={28} /></div>
-      <span className="font-bold text-gray-800 text-lg">Güvenli Alışveriş</span>
-     </div>
-     <div className="flex flex-col items-center gap-3 group cursor-pointer">
-      <div className="p-4 bg-purple-50 rounded-full text-purple-600 group-hover:scale-110 transition-transform"><CreditCard size={28} /></div>
-      <span className="font-bold text-gray-800 text-lg">Taksit İmkanı</span>
-     </div>
-     <div className="flex flex-col items-center gap-3 group cursor-pointer">
-      <div className="p-4 bg-orange-50 rounded-full text-orange-600 group-hover:scale-110 transition-transform"><Phone size={28} /></div>
-      <span className="font-bold text-gray-800 text-lg">7/24 Destek</span>
-     </div>
-    </div>
-   </section>
+      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-tight">
+       Geleceği <br className="hidden sm:block" />
+       <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-emerald-400">
+        Bugün Keşfet
+       </span>
+      </h1>
 
-   {/* 3. SLIDER: YENİ ÜRÜNLER (Image Component ile) */}
-   <section className="max-w-[1400px] mx-auto py-20 px-12">
-    <div className="flex justify-between items-end mb-10">
-     <div>
-      <h2 className="text-4xl font-bold text-gray-900 tracking-tight">Yeni Gelenler</h2>
-      <p className="text-gray-500 mt-2 text-lg">En son teknoloji ürünleri keşfedin.</p>
-     </div>
-     <Link href="/yeniler">
-      <Button variant="link" className="text-blue-600 text-lg font-semibold cursor-pointer">
-       Tümünü Gör &rarr;
-      </Button>
-     </Link>
-    </div>
+      <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto lg:mx-0 leading-relaxed px-2 sm:px-0">
+       En yeni bilgisayarlar, profesyonel kameralar ve akıllı ev sistemleri.
+       Teknoloji tutkunları için özenle seçilmiş premium ürünler.
+      </p>
 
-    <Carousel className="w-full relative" opts={{ align: "start", loop: true }}>
-     <CarouselContent className="-ml-6">
-      {newProducts.map((product) => (
-       <CarouselItem key={product.id} className="pl-6 basis-1/2 md:basis-1/3 lg:basis-1/4">
-        <Card className="h-full hover:shadow-xl transition-all duration-300 border-gray-200">
-         <CardContent className="p-5 flex flex-col h-full">
-          {/* GÖRSEL ALANI DÜZENLENDİ */}
-          <div className="aspect-square bg-gray-100 rounded-xl mb-5 overflow-hidden relative group">
-           <img
-            src={product.image}
-            alt={product.name}
-            className="object-cover group-hover:scale-110 transition-transform duration-500"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-           />
-           <Badge className="absolute top-3 left-3 bg-blue-600 px-3 py-1 z-10">YENİ</Badge>
-          </div>
-          <div className="text-sm font-medium text-gray-500 mb-2">{product.category}</div>
-          <h3 className="font-bold text-gray-900 mb-3 text-lg line-clamp-1">{product.name}</h3>
-          <div className="mt-auto flex items-center justify-between">
-           <span className="text-xl font-bold text-slate-900">{product.price}</span>
-           <Button size="icon" className="h-10 w-10 rounded-full bg-slate-900 hover:bg-blue-600 transition-colors">
-            <ShoppingCart size={18} />
-           </Button>
-          </div>
-         </CardContent>
-        </Card>
-       </CarouselItem>
-      ))}
-     </CarouselContent>
-
-     <CarouselPrevious className="-left-12 h-12 w-12 border-2 border-gray-300 hover:bg-white hover:text-blue-600 hover:border-blue-600" />
-     <CarouselNext className="-right-12 h-12 w-12 border-2 border-gray-300 hover:bg-white hover:text-blue-600 hover:border-blue-600" />
-    </Carousel>
-   </section>
-
-   {/* 4. SLIDER: İNDİRİMLİ ÜRÜNLER  */}
-   <section className="bg-red-50 py-20 px-12">
-    <div className="max-w-[1400px] mx-auto">
-     <div className="flex justify-between items-end mb-10">
-      <div>
-       <h2 className="text-4xl font-bold text-red-600 flex items-center gap-3">
-        <Star className="fill-red-600 h-8 w-8" /> Fırsat Ürünleri
-       </h2>
-       <p className="text-gray-600 mt-2 text-lg">Sınırlı süre geçerli indirimleri kaçırmayın.</p>
+      <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-3 sm:gap-4 pt-2 sm:pt-4">
+       <Button
+        size="lg"
+        variant="outline"
+        className="h-11 sm:h-12 px-6 sm:px-8 text-sm sm:text-base bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white rounded-full backdrop-blur-sm transition-colors w-full sm:w-auto"
+        onClick={() => router.push('/yeniler')}
+       >
+        Yeni Ürünleri Keşfet
+       </Button>
+       <Button size="lg" className="h-11 sm:h-12 px-6 sm:px-8 text-sm sm:text-base bg-white text-slate-950 hover:bg-gray-100 hover:text-slate-950 font-semibold rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all w-full sm:w-auto"
+        onClick={() => router.push('/indirimler')}
+       >
+        İndirimleri Keşfet
+       </Button>
       </div>
-      <Link href="/indirimler">
-       <Button variant="link" className="text-red-600 text-lg font-semibold hover:text-red-800 cursor-pointer">
-        Tümünü Gör &rarr;
+     </div>
+
+     <div className="flex-1 w-full max-w-[750px] relative mt-8 lg:mt-0">
+      <div className="absolute inset-0 bg-linear-to-b from-blue-500/20 to-transparent blur-3xl rounded-full transform scale-75 z-0"></div>
+      <img
+       src="fix.jpg"
+       alt="Hero Product"
+       className="relative z-10 w-full max-h-[280px] sm:max-h-[400px] md:max-h-[480px] lg:max-h-[550px] object-cover rounded-2xl sm:rounded-3xl shadow-2xl transform hover:scale-105 transition-all duration-700"
+      />
+     </div>
+    </div>
+   </section>
+
+   {/* KATEGORİLER */}
+   <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="mb-6 sm:mb-8">
+     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Popüler Kategoriler</h2>
+    </div>
+
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+     {categories.slice(0, 4).map(([slug, info]) => (
+      <Link key={slug} href={`/kategori/${slug}`} className="group relative overflow-hidden rounded-xl sm:rounded-2xl aspect-4/3 bg-gray-100">
+       <img
+        src={info.banner}
+        alt={info.title}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+       />
+       <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent flex flex-col justify-end p-4 sm:p-6">
+        <h3 className="text-white font-bold text-sm sm:text-base lg:text-lg">{info.title}</h3>
+        <p className="text-gray-200 text-xs sm:text-sm opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 mt-1">
+         İncele &rarr;
+        </p>
+       </div>
+      </Link>
+     ))}
+    </div>
+   </section>
+
+   {/* AVANTAJLAR BANDI */}
+   <section className="bg-white py-12 sm:py-16 lg:py-20 border-y border-gray-100">
+    <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
+     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="bg-linear-to-br from-blue-50 to-blue-100/50 p-6 sm:p-8 rounded-2xl shadow-md hover:shadow-xl flex flex-col items-center text-center gap-4 hover:-translate-y-1 transition-all duration-300 border border-blue-100">
+       <div className="p-4 bg-blue-500 text-white rounded-2xl shadow-lg">
+        <Truck className="w-6 h-6 sm:w-8 sm:h-8" />
+       </div>
+       <div>
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1">Hızlı Kargo</h3>
+        <p className="text-sm text-gray-600">24 saatte kargoda</p>
+       </div>
+      </div>
+      <div className="bg-linear-to-br from-emerald-50 to-emerald-100/50 p-6 sm:p-8 rounded-2xl shadow-md hover:shadow-xl flex flex-col items-center text-center gap-4 hover:-translate-y-1 transition-all duration-300 border border-emerald-100">
+       <div className="p-4 bg-emerald-500 text-white rounded-2xl shadow-lg">
+        <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8" />
+       </div>
+       <div>
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1">Güvenli Ödeme</h3>
+        <p className="text-sm text-gray-600">%100 korumalı</p>
+       </div>
+      </div>
+      <div className="bg-linear-to-br from-purple-50 to-purple-100/50 p-6 sm:p-8 rounded-2xl shadow-md hover:shadow-xl flex flex-col items-center text-center gap-4 hover:-translate-y-1 transition-all duration-300 border border-purple-100">
+       <div className="p-4 bg-purple-500 text-white rounded-2xl shadow-lg">
+        <CreditCard className="w-6 h-6 sm:w-8 sm:h-8" />
+       </div>
+       <div>
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1">Taksit İmkanı</h3>
+        <p className="text-sm text-gray-600">9 taksite varan</p>
+       </div>
+      </div>
+      <div className="bg-linear-to-br from-orange-50 to-orange-100/50 p-6 sm:p-8 rounded-2xl shadow-md hover:shadow-xl flex flex-col items-center text-center gap-4 hover:-translate-y-1 transition-all duration-300 border border-orange-100">
+       <div className="p-4 bg-orange-500 text-white rounded-2xl shadow-lg">
+        <Phone className="w-6 h-6 sm:w-8 sm:h-8" />
+       </div>
+       <div>
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1">7/24 Destek</h3>
+        <p className="text-sm text-gray-600">Müşteri hizmetleri</p>
+       </div>
+      </div>
+     </div>
+    </div>
+   </section>
+
+   {/* YENİ ÜRÜNLER */}
+   {newProducts.length > 0 && (
+    <section className="container mx-auto py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 sm:mb-10">
+      <div>
+       <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Yeni Gelenler</h2>
+       <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">En son teknoloji ürünleri keşfedin.</p>
+      </div>
+      <Link href="/yeniler">
+       <Button variant="outline" className="hidden sm:flex rounded-full text-sm sm:text-base">
+        Tümünü Gör
        </Button>
       </Link>
      </div>
 
-     <Carousel className="w-full relative" opts={{ align: "start", loop: true }}>
-      <CarouselContent className="-ml-6">
-       {discountedProducts.map((product) => (
-        <CarouselItem key={product.id} className="pl-6 basis-1/2 md:basis-1/3 lg:basis-1/4">
-         <Card className="h-full border-red-100 hover:border-red-300 hover:shadow-md transition-all">
-          <CardContent className="p-5 flex flex-col h-full">
-           {/* GÖRSEL ALANI DÜZENLENDİ */}
-           <div className="aspect-square bg-white rounded-xl mb-5 overflow-hidden relative group">
-            <img
-             src={product.image}
-             alt={product.name}
-             className="object-cover group-hover:scale-105 transition-transform duration-300"
-             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            />
-            <Badge className="absolute top-3 right-3 bg-red-600 animate-pulse px-3 py-1 z-10">{product.discount} İndirim</Badge>
-           </div>
-           <h3 className="font-semibold text-gray-900 mb-2 text-lg line-clamp-1">{product.name}</h3>
-           <div className="mt-auto">
-            <span className="text-gray-400 line-through mr-3 text-lg">{product.oldPrice}</span>
-            <span className="text-2xl font-bold text-red-600">{product.price}</span>
-           </div>
-           <Button className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white h-11 text-md font-medium">
-            Sepete Ekle
-           </Button>
-          </CardContent>
-         </Card>
+     <Carousel className="w-full" opts={{ align: "start", loop: newProducts.length > 4, dragFree: newProducts.length > 4, watchDrag: newProducts.length > 4 }}>
+      <CarouselContent className="-ml-2 sm:-ml-4 pb-4">
+       {newProducts.map((product) => (
+        <CarouselItem key={product.id} className="pl-2 sm:pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+         <ProductCard product={product} />
         </CarouselItem>
        ))}
       </CarouselContent>
-
-      <CarouselPrevious className="-left-12 h-12 w-12 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 hover:border-red-600" />
-      <CarouselNext className="-right-12 h-12 w-12 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 hover:border-red-600" />
+      {newProducts.length > 4 && (
+       <>
+        <CarouselPrevious className="hidden md:flex -left-15 h-12 w-12 rounded-full" />
+        <CarouselNext className="hidden md:flex -right-15 h-12 w-12 rounded-full" />
+       </>
+      )}
      </Carousel>
+    </section>
+   )}
+
+   {/* ÖNE ÇIKAN ÜRÜNLER */}
+   {featuredProducts.length > 0 && (
+    <section className="bg-amber-50/50 py-12 sm:py-16 lg:py-20 border-y border-amber-100">
+     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 sm:mb-10">
+       <div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+         <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-500 text-amber-500" /> Öne Çıkan Ürünler
+        </h2>
+        <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">Sizin için özenle seçtiğimiz ürünler.</p>
+       </div>
+       <Link href="/yeniler">
+        <Button variant="outline" className="hidden sm:flex rounded-full text-sm sm:text-base">
+         Tümünü Gör
+        </Button>
+       </Link>
+      </div>
+
+      <Carousel className="w-full" opts={{ align: "start", loop: featuredProducts.length > 4, dragFree: featuredProducts.length > 4, watchDrag: featuredProducts.length > 4 }}>
+       <CarouselContent className="-ml-2 sm:-ml-4 pb-4">
+        {featuredProducts.map((product) => (
+         <CarouselItem key={product.id} className="pl-2 sm:pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+          <ProductCard product={product} />
+         </CarouselItem>
+        ))}
+       </CarouselContent>
+       {featuredProducts.length > 4 && (
+        <>
+         <CarouselPrevious className="hidden md:flex -left-12 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselNext className="hidden md:flex -right-12 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
+        </>
+       )}
+      </Carousel>
+     </div>
+    </section>
+   )}
+
+   {/* İNDİRİMLİ ÜRÜNLER */}
+   {discountedProducts.length > 0 && (
+    <section className="bg-red-50/50 py-12 sm:py-16 lg:py-20 border-y border-red-100">
+     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 sm:mb-10">
+       <div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-red-600 flex items-center gap-2 sm:gap-3">
+         <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 fill-red-600 text-red-600" /> Fırsat Ürünleri
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Sınırlı süre geçerli indirimleri kaçırmayın.</p>
+       </div>
+       <Link href="/indirimler">
+        <Button variant="outline" className="hidden sm:flex rounded-full text-sm sm:text-base">
+         Tümünü Gör
+        </Button>
+       </Link>
+      </div>
+
+      <Carousel className="w-full" opts={{ align: "start", loop: discountedProducts.length > 4, dragFree: discountedProducts.length > 4, watchDrag: discountedProducts.length > 4 }}>
+       <CarouselContent className="-ml-2 sm:-ml-4 pb-4">
+        {discountedProducts.map((product) => (
+         <CarouselItem key={product.id} className="pl-2 sm:pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+          <ProductCard product={product} />
+         </CarouselItem>
+        ))}
+       </CarouselContent>
+       {discountedProducts.length > 4 && (
+        <>
+         <CarouselPrevious className="hidden md:flex -left-12 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselNext className="hidden md:flex -right-12 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
+        </>
+       )}
+      </Carousel>
+     </div>
+    </section>
+   )}
+
+   {/* MÜŞTERİ YORUMLARI */}
+   <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-900">Müşterilerimiz Ne Diyor?</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+     {[1, 2, 3].map((i) => (
+      <div key={i} className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100">
+       <div className="flex gap-1 mb-4">
+        {Array.from({ length: 5 }).map((_, j) => (
+         <Sparkles key={j} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
+        ))}
+       </div>
+       <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+        &ldquo;Ürün beklediğimden çok daha hızlı geldi. Paketleme harikaydı ve müşteri hizmetleri çok ilgiliydi. Kesinlikle tavsiye ederim.&ldquo;
+       </p>
+       <div className="flex items-center gap-3 sm:gap-4">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs sm:text-sm shrink-0">
+         {i === 1 ? 'AH' : i === 2 ? 'MK' : 'ZS'}
+        </div>
+        <div className="min-w-0">
+         <h4 className="font-bold text-xs sm:text-sm text-gray-900">{i === 1 ? 'Ahmet H.' : i === 2 ? 'Merve K.' : 'Zeynep S.'}</h4>
+         <span className="text-xs text-gray-500">Onaylı Müşteri</span>
+        </div>
+       </div>
+      </div>
+     ))}
     </div>
    </section>
 
-   {/* 5. SIKÇA SORULAN SORULAR */}
-   <section className="max-w-[1000px] mx-auto py-24 px-6">
-    <div className="text-center mb-12">
-     <h2 className="text-4xl font-bold text-gray-900">Sık Sorulan Sorular</h2>
-     <p className="text-gray-500 mt-3 text-lg">Aklınıza takılan soruların cevapları.</p>
+   {/* SIKÇA SORULAN SORULAR */}
+   <section className="max-w-3xl mx-auto py-12 sm:py-16 lg:py-20 px-4 sm:px-6">
+    <div className="text-center mb-8 sm:mb-12">
+     <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Sık Sorulan Sorular</h2>
+     <p className="text-sm sm:text-base text-gray-500 mt-2 sm:mt-3">Aklınıza takılan soruların cevapları.</p>
     </div>
 
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion type="single" collapsible className="w-full space-y-3 sm:space-y-4">
      {faqs.map((faq) => (
-      <AccordionItem key={faq.id} value={faq.id} className="mb-4 border rounded-lg px-4 bg-white shadow-sm">
-       <AccordionTrigger className="text-lg font-medium text-gray-800 hover:no-underline hover:text-blue-600 py-6">
+      <AccordionItem key={faq.id} value={faq.id} className="border border-gray-200 rounded-xl px-2 sm:px-3 bg-white data-[state=open]:border-blue-200 data-[state=open]:ring-2 sm:data-[state=open]:ring-4 data-[state=open]:ring-blue-50 transition-all">
+       <AccordionTrigger className="text-left font-medium text-sm sm:text-base text-gray-800 hover:text-blue-600 py-3 sm:py-4 px-3 sm:px-4 hover:no-underline">
         {faq.q}
        </AccordionTrigger>
-       <AccordionContent className="text-gray-600 text-lg leading-relaxed pb-6">
+       <AccordionContent className="text-sm sm:text-base text-gray-600 px-3 sm:px-4 pb-3 sm:pb-4 leading-relaxed">
         {faq.a}
        </AccordionContent>
       </AccordionItem>
      ))}
     </Accordion>
+   </section>
+
+   {/* MARKALAR BANDI */}
+   <section className="py-8 sm:py-10 border-b border-gray-100 bg-white">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+     <p className="text-center text-xs sm:text-sm font-medium text-gray-400 mb-6 sm:mb-8 uppercase tracking-wider">
+      Dünyanın En İyi Markaları Burada
+     </p>
+     <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+      {brands.map((brand, index) => (
+       <span
+        key={index}
+        className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold cursor-pointer transition-colors ${brand.className}`}
+       >
+        {brand.name}
+       </span>
+      ))}
+     </div>
+    </div>
    </section>
 
   </div>

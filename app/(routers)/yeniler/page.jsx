@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
  ChevronDown,
  SlidersHorizontal,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
-import { getNewProducts, categoryInfo } from "@/lib/products";
+import { categoryInfo } from "@/lib/product-utils";
 import { cn } from "@/lib/utils";
 
 const sortOptions = [
@@ -38,11 +38,25 @@ export default function YenilerPage() {
  const [isSortOpen, setIsSortOpen] = useState(false);
  const [showFilters, setShowFilters] = useState(false);
  const [priceRange, setPriceRange] = useState(null);
- const [selectedCategory, setSelectedCategory] = useState(null);
+ const [selectedCategories, setSelectedCategories] = useState([]);
  const [showInStock, setShowInStock] = useState(false);
  const [showDiscounted, setShowDiscounted] = useState(false);
+ const [categorySectionOpen, setCategorySectionOpen] = useState(true);
+ const [priceSectionOpen, setPriceSectionOpen] = useState(true);
+ const [brandSectionOpen, setBrandSectionOpen] = useState(false);
+ const [selectedBrands, setSelectedBrands] = useState([]);
+ const [allProducts, setAllProducts] = useState([]);
+ const [brands, setBrands] = useState([]);
 
- const allProducts = getNewProducts();
+ useEffect(() => {
+  Promise.all([
+   fetch("/api/products?new=1").then((r) => (r.ok ? r.json() : [])),
+   fetch("/api/products/brands").then((r) => (r.ok ? r.json() : [])),
+  ]).then(([products, brandsList]) => {
+   setAllProducts(products || []);
+   setBrands(Array.isArray(brandsList) ? brandsList : []);
+  });
+ }, []);
 
  const filteredProducts = useMemo(() => {
   let result = [...allProducts];
@@ -52,8 +66,11 @@ export default function YenilerPage() {
     (p) => p.price >= priceRange.min && p.price < priceRange.max
    );
   }
-  if (selectedCategory) {
-   result = result.filter((p) => p.category === selectedCategory);
+  if (selectedCategories.length > 0) {
+   result = result.filter((p) => selectedCategories.includes(p.category));
+  }
+  if (selectedBrands.length > 0) {
+   result = result.filter((p) => p.brand && selectedBrands.includes(p.brand));
   }
   if (showInStock) {
    result = result.filter((p) => p.inStock);
@@ -80,21 +97,34 @@ export default function YenilerPage() {
   }
 
   return result;
- }, [allProducts, sortBy, priceRange, selectedCategory, showInStock, showDiscounted]);
+ }, [allProducts, sortBy, priceRange, selectedCategories, selectedBrands, showInStock, showDiscounted]);
 
- const activeFiltersCount = [priceRange, selectedCategory, showInStock, showDiscounted].filter(Boolean).length;
+ const activeFiltersCount = [priceRange, showInStock, showDiscounted].filter(Boolean).length + selectedCategories.length + selectedBrands.length;
 
  const clearAllFilters = () => {
   setPriceRange(null);
-  setSelectedCategory(null);
+  setSelectedCategories([]);
+  setSelectedBrands([]);
   setShowInStock(false);
   setShowDiscounted(false);
+ };
+
+ const toggleCategory = (slug) => {
+  setSelectedCategories((prev) =>
+   prev.includes(slug) ? prev.filter((c) => c !== slug) : [...prev, slug]
+  );
+ };
+
+ const toggleBrand = (brand) => {
+  setSelectedBrands((prev) =>
+   prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+  );
  };
 
  return (
   <div className="min-h-screen bg-gray-50/50">
    {/* Banner */}
-   <div className="relative h-48 overflow-hidden bg-linear-to-r from-emerald-600 to-teal-500 md:h-64">
+   <div className="relative h-48 overflow-hidden bg-linear-to-r from-emerald-600 to-emerald-800 md:h-64">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
     <div className="container relative z-10 flex h-full flex-col justify-center px-4">
      <h1 className="text-3xl font-bold text-white md:text-4xl lg:text-5xl">
@@ -183,42 +213,86 @@ export default function YenilerPage() {
         )}
        </div>
 
-       {/* Category Filter */}
+       {/* Kategori - başlığa tıklayınca açılır/kapanır, ilk başta açık */}
        <div>
-        <h4 className="mb-3 text-sm font-medium text-gray-700">Kategori</h4>
-        <div className="space-y-2">
-         {categories.map((cat) => (
-          <label key={cat.slug} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
-           <input
-            type="radio"
-            name="category"
-            checked={selectedCategory === cat.slug}
-            onChange={() => setSelectedCategory(selectedCategory === cat.slug ? null : cat.slug)}
-            className="size-4 accent-emerald-500"
-           />
-           <span className="text-sm text-gray-600">{cat.label}</span>
-          </label>
-         ))}
-        </div>
+        <button
+         type="button"
+         onClick={() => setCategorySectionOpen((v) => !v)}
+         className="mb-3 flex w-full items-center justify-between text-left text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+        >
+         Kategori
+         <ChevronDown className={cn("size-4 shrink-0 transition-transform", !categorySectionOpen && "-rotate-90")} />
+        </button>
+        {categorySectionOpen && (
+         <div className="space-y-2">
+          {categories.map((cat) => (
+           <label key={cat.slug} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
+            <input
+             type="checkbox"
+             checked={selectedCategories.includes(cat.slug)}
+             onChange={() => toggleCategory(cat.slug)}
+             className="size-4 rounded accent-emerald-500"
+            />
+            <span className="text-sm text-gray-600">{cat.label}</span>
+           </label>
+          ))}
+         </div>
+        )}
        </div>
 
-       {/* Price Range */}
+       {/* Marka - başlığa tıklayınca açılır/kapanır, ilk başta açık */}
        <div>
-        <h4 className="mb-3 text-sm font-medium text-gray-700">Fiyat Aralığı</h4>
-        <div className="space-y-2">
-         {priceRanges.map((range, i) => (
-          <label key={i} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
-           <input
-            type="radio"
-            name="priceRange"
-            checked={priceRange?.min === range.min}
-            onChange={() => setPriceRange(priceRange?.min === range.min ? null : range)}
-            className="size-4 accent-emerald-500"
-           />
-           <span className="text-sm text-gray-600">{range.label}</span>
-          </label>
-         ))}
-        </div>
+        <button
+         type="button"
+         onClick={() => setBrandSectionOpen((v) => !v)}
+         className="mb-3 flex w-full items-center justify-between text-left text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+        >
+         Marka
+         <ChevronDown className={cn("size-4 shrink-0 transition-transform", !brandSectionOpen && "-rotate-90")} />
+        </button>
+        {brandSectionOpen && (
+         <div className="space-y-2">
+          {brands.map((brand) => (
+           <label key={brand} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
+            <input
+             type="checkbox"
+             checked={selectedBrands.includes(brand)}
+             onChange={() => toggleBrand(brand)}
+             className="size-4 rounded accent-emerald-500"
+            />
+            <span className="text-sm text-gray-600">{brand}</span>
+           </label>
+          ))}
+         </div>
+        )}
+       </div>
+
+       {/* Fiyat Aralığı - başlığa tıklayınca açılır/kapanır, ilk başta açık */}
+       <div>
+        <button
+         type="button"
+         onClick={() => setPriceSectionOpen((v) => !v)}
+         className="mb-3 flex w-full items-center justify-between text-left text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+        >
+         Fiyat Aralığı
+         <ChevronDown className={cn("size-4 shrink-0 transition-transform", !priceSectionOpen && "-rotate-90")} />
+        </button>
+        {priceSectionOpen && (
+         <div className="space-y-2">
+          {priceRanges.map((range, i) => (
+           <label key={i} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
+            <input
+             type="radio"
+             name="priceRange"
+             checked={priceRange?.min === range.min}
+             onChange={() => setPriceRange(priceRange?.min === range.min ? null : range)}
+             className="size-4 accent-emerald-500"
+            />
+            <span className="text-sm text-gray-600">{range.label}</span>
+           </label>
+          ))}
+         </div>
+        )}
        </div>
 
        {/* Quick Filters */}
@@ -253,14 +327,22 @@ export default function YenilerPage() {
       {/* Active Filters Tags */}
       {activeFiltersCount > 0 && (
        <div className="mb-4 flex flex-wrap items-center gap-2">
-        {selectedCategory && (
-         <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
-          {categories.find((c) => c.slug === selectedCategory)?.label}
-          <button onClick={() => setSelectedCategory(null)} className="cursor-pointer">
+        {selectedCategories.map((slug) => (
+         <span key={slug} className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
+          {categories.find((c) => c.slug === slug)?.label}
+          <button onClick={() => toggleCategory(slug)} className="cursor-pointer">
            <X className="size-3.5" />
           </button>
          </span>
-        )}
+        ))}
+        {selectedBrands.map((brand) => (
+         <span key={brand} className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
+          {brand}
+          <button onClick={() => toggleBrand(brand)} className="cursor-pointer">
+           <X className="size-3.5" />
+          </button>
+         </span>
+        ))}
         {priceRange && (
          <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
           {priceRange.label}
@@ -298,7 +380,7 @@ export default function YenilerPage() {
         </Button>
        </div>
       ) : (
-       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+       <div className={cn("grid gap-4", showFilters ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-3" : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4")}>
         {filteredProducts.map((product) => (
          <ProductCard key={product.id} product={product} />
         ))}

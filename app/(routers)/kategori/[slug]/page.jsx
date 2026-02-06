@@ -1,18 +1,16 @@
 "use client";
 
-import { useState, useMemo, use } from "react";
+import { useState, useMemo, use, useEffect } from "react";
 import Link from "next/link";
 import {
  SlidersHorizontal,
- Grid3X3,
- LayoutList,
  ChevronDown,
  X,
  SearchX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
-import { getProductsByCategory, categoryInfo } from "@/lib/products";
+import { categoryInfo } from "@/lib/product-utils";
 import { cn } from "@/lib/utils";
 
 const sortOptions = [
@@ -35,16 +33,30 @@ const priceRanges = [
 export default function KategoriPage({ params }) {
  const { slug } = use(params);
  const [sortBy, setSortBy] = useState("featured");
- const [viewMode, setViewMode] = useState("grid");
  const [showFilters, setShowFilters] = useState(false);
  const [priceRange, setPriceRange] = useState(null);
  const [showInStock, setShowInStock] = useState(false);
  const [showDiscounted, setShowDiscounted] = useState(false);
  const [showNew, setShowNew] = useState(false);
  const [isSortOpen, setIsSortOpen] = useState(false);
+ const [priceSectionOpen, setPriceSectionOpen] = useState(false);
+ const [brandSectionOpen, setBrandSectionOpen] = useState(false);
+ const [selectedBrands, setSelectedBrands] = useState([]);
+ const [allProducts, setAllProducts] = useState([]);
+ const [brands, setBrands] = useState([]);
 
  const category = categoryInfo[slug];
- const allProducts = getProductsByCategory(slug);
+
+ useEffect(() => {
+  if (!slug) return;
+  Promise.all([
+   fetch(`/api/products?category=${encodeURIComponent(slug)}`).then((r) => (r.ok ? r.json() : [])),
+   fetch("/api/products/brands").then((r) => (r.ok ? r.json() : [])),
+  ]).then(([products, brandsList]) => {
+   setAllProducts(products || []);
+   setBrands(Array.isArray(brandsList) ? brandsList : []);
+  });
+ }, [slug]);
 
  // Filtreleme ve sıralama
  const filteredProducts = useMemo(() => {
@@ -53,6 +65,9 @@ export default function KategoriPage({ params }) {
    result = result.filter(
     (p) => p.price >= priceRange.min && p.price < priceRange.max
    );
+  }
+  if (selectedBrands.length > 0) {
+   result = result.filter((p) => p.brand && selectedBrands.includes(p.brand));
   }
   if (showInStock) {
    result = result.filter((p) => p.inStock);
@@ -85,15 +100,22 @@ export default function KategoriPage({ params }) {
     break;
   }
   return result;
- }, [allProducts, sortBy, priceRange, showInStock, showDiscounted, showNew]);
+ }, [allProducts, sortBy, priceRange, selectedBrands, showInStock, showDiscounted, showNew]);
 
- const activeFiltersCount = [priceRange, showInStock, showDiscounted, showNew].filter(Boolean).length;
+ const activeFiltersCount = [priceRange, showInStock, showDiscounted, showNew].filter(Boolean).length + selectedBrands.length;
 
  const clearAllFilters = () => {
   setPriceRange(null);
+  setSelectedBrands([]);
   setShowInStock(false);
   setShowDiscounted(false);
   setShowNew(false);
+ };
+
+ const toggleBrand = (brand) => {
+  setSelectedBrands((prev) =>
+   prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+  );
  };
 
  if (!category) {
@@ -196,33 +218,6 @@ export default function KategoriPage({ params }) {
        )}
       </div>
 
-      {/* View Mode */}
-      <div className="hidden items-center rounded-full border border-gray-200 p-1 md:flex">
-       <button
-        onClick={() => setViewMode("grid")}
-        className={cn(
-         "cursor-pointer rounded-full p-2 transition-colors",
-         viewMode === "grid"
-          ? "bg-emerald-500 text-white"
-          : "text-gray-400 hover:text-gray-600"
-        )}
-        aria-label="Izgara görünümü"
-       >
-        <Grid3X3 className="size-4" />
-       </button>
-       <button
-        onClick={() => setViewMode("list")}
-        className={cn(
-         "cursor-pointer rounded-full p-2 transition-colors",
-         viewMode === "list"
-          ? "bg-emerald-500 text-white"
-          : "text-gray-400 hover:text-gray-600"
-        )}
-        aria-label="Liste görünümü"
-       >
-        <LayoutList className="size-4" />
-       </button>
-      </div>
      </div>
     </div>
 
@@ -247,26 +242,62 @@ export default function KategoriPage({ params }) {
         )}
        </div>
 
-       {/* Price Range */}
+       {/* Fiyat Aralığı - başlığa tıklayınca açılır/kapanır, ilk başta açık */}
        <div>
-        <h4 className="mb-3 text-sm font-medium text-gray-700">Fiyat Aralığı</h4>
-        <div className="space-y-2">
-         {priceRanges.map((range, i) => (
-          <label
-           key={i}
-           className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
-          >
-           <input
-            type="radio"
-            name="priceRange"
-            checked={priceRange?.min === range.min}
-            onChange={() => setPriceRange(priceRange?.min === range.min ? null : range)}
-            className="size-4 accent-emerald-500"
-           />
-           <span className="text-sm text-gray-600">{range.label}</span>
-          </label>
-         ))}
-        </div>
+        <button
+         type="button"
+         onClick={() => setPriceSectionOpen((v) => !v)}
+         className="mb-3 flex w-full items-center justify-between text-left text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+        >
+         Fiyat Aralığı
+         <ChevronDown className={cn("size-4 shrink-0 transition-transform", !priceSectionOpen && "-rotate-90")} />
+        </button>
+        {priceSectionOpen && (
+         <div className="space-y-2">
+          {priceRanges.map((range, i) => (
+           <label
+            key={i}
+            className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
+           >
+            <input
+             type="radio"
+             name="priceRange"
+             checked={priceRange?.min === range.min}
+             onChange={() => setPriceRange(priceRange?.min === range.min ? null : range)}
+             className="size-4 accent-emerald-500"
+            />
+            <span className="text-sm text-gray-600">{range.label}</span>
+           </label>
+          ))}
+         </div>
+        )}
+       </div>
+
+       {/* Marka - başlığa tıklayınca açılır/kapanır, ilk başta açık */}
+       <div>
+        <button
+         type="button"
+         onClick={() => setBrandSectionOpen((v) => !v)}
+         className="mb-3 flex w-full items-center justify-between text-left text-sm font-medium text-gray-700 hover:text-gray-900 cursor-pointer"
+        >
+         Marka
+         <ChevronDown className={cn("size-4 shrink-0 transition-transform", !brandSectionOpen && "-rotate-90")} />
+        </button>
+        {brandSectionOpen && (
+         <div className="space-y-2">
+          {brands.map((brand) => (
+           <label key={brand} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
+            <input
+             type="checkbox"
+             checked={selectedBrands.includes(brand)}
+             onChange={() => toggleBrand(brand)}
+             className="size-4 rounded accent-emerald-500"
+            />
+            <span className="text-sm text-gray-600">{brand}</span>
+           </label>
+          ))}
+         </div>
+        )}
        </div>
 
        {/* Quick Filters */}
@@ -310,6 +341,14 @@ export default function KategoriPage({ params }) {
       {/* Active Filters Tags */}
       {activeFiltersCount > 0 && (
        <div className="mb-4 flex flex-wrap items-center gap-2">
+        {selectedBrands.map((brand) => (
+         <span key={brand} className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
+          {brand}
+          <button onClick={() => toggleBrand(brand)} className="cursor-pointer">
+           <X className="size-3.5" />
+          </button>
+         </span>
+        ))}
         {priceRange && (
          <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm text-emerald-700">
           {priceRange.label}
@@ -362,9 +401,9 @@ export default function KategoriPage({ params }) {
        <div
         className={cn(
          "grid gap-4",
-         viewMode === "grid"
-          ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-          : "grid-cols-1 sm:grid-cols-2"
+         showFilters
+          ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-3"
+          : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         )}
        >
         {filteredProducts.map((product) => (

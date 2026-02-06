@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { MapPin, Clock, Phone, Mail, Send, ExternalLink, Store } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -205,12 +206,13 @@ export default function IletisimPage() {
        </CardHeader>
        <CardContent>
         <div className="relative aspect-video w-full overflow-hidden rounded-xl">
-         <img
+         <Image
           src="/electronik-dunyasi.png"
           alt="Elektronik Dünyası dükkan fotoğrafı"
-          className="object-cover"
+          fill
           sizes="(max-width: 1024px) 100vw, 60vw"
-          priority
+          className="object-cover"
+          priority={true}
          />
         </div>
        </CardContent>
