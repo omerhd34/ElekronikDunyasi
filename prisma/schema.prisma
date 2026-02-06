@@ -7,6 +7,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Message {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String   @default("")
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id                    String   @id @default(uuid())
+  email                 String   @unique
+  password              String
+  firstName             String
+  lastName              String
+  phone                 String?
+  address               String?
+  emailNotifications    Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  sessions              CustomerSession[]
+  addresses             CustomerAddress[]
+  cards                 CustomerCard[]
+  orders                Order[]
+}
+
+model Order {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status     String   // pending, processing, shipped, delivered, cancelled
+  createdAt  DateTime @default(now())
+}
+
+model CustomerAddress {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  title        String   // Ev, İş, vb.
+  recipientName String
+  address      String
+  city         String
+  district     String
+  phone        String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model CustomerCard {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  title      String   // Ana Kart, vb.
+  last4      String   // Son 4 rakam (güvenlik için sadece bu saklanır)
+  cardHolder String
+  expiryMonth String  // MM
+  expiryYear  String  // YY
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model CustomerSession {
+  id         String   @id @default(uuid())
+  token      String   @unique
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model SiteSetting {
+  id    String @id @default(uuid())
+  key   String @unique
+  value String
+}
+
 model Product {
   id              String   @id @default(uuid())
   name            String
@@ -20,7 +97,6 @@ model Product {
   stock           Int      @default(0)
   brand           String?
   specifications  Json?    // { category, items: [{ key, value }] }[]
-  tags            String[]
   isNewProduct    Boolean  @default(false)
   isFeatured      Boolean  @default(false)
   rating          Float    @default(0)

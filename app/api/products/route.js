@@ -7,12 +7,14 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim();
   const category = searchParams.get("category")?.trim();
+  const brand = searchParams.get("brand")?.trim();
   const newOnly = searchParams.get("new") === "1";
   const discountedOnly = searchParams.get("discounted") === "1";
   const featuredOnly = searchParams.get("featured") === "1";
 
   const where = {};
   if (category) where.category = category;
+  if (brand) where.brand = brand;
   if (newOnly) where.isNewProduct = true;
   if (discountedOnly) where.discountPrice = { not: null };
   if (featuredOnly) where.isFeatured = true;
@@ -129,9 +131,6 @@ export async function POST(request) {
   const discountPrice = parseFloatOrNull(body.discountPrice);
   const stock = parseIntOrZero(body.stock);
   const brand = String(body.brand ?? "").trim() || undefined;
-  const tags = Array.isArray(body.tags)
-   ? body.tags.filter((t) => typeof t === "string" && t.trim())
-   : [];
   const isNewProduct = Boolean(body.isNewProduct);
   const isFeatured = Boolean(body.isFeatured);
 
@@ -173,7 +172,6 @@ export async function POST(request) {
     stock,
     brand,
     specifications,
-    tags,
     isNewProduct,
     isFeatured,
    },

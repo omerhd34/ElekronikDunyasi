@@ -80,7 +80,7 @@ const GizlilikPolitikasiPage = () => {
       </p>
       <div className="bg-gray-100 p-4 rounded-lg text-sm">
        <p><strong>Firma Adı:</strong> Elektronik Dünyası</p>
-       <p><strong>Adres:</strong> Mehmet Akif, Recep Ayan Cd. 23B, 34406 Çekmeköy/İstanbul</p>
+       <p><strong>Adres:</strong> Mehmet Akif, Recep Ayan Cd. 23B, 34406, Çekmeköy/İstanbul</p>
        <p><strong>Telefon:</strong> 0546 219 72 21</p>
       </div>
      </section>

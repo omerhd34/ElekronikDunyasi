@@ -132,6 +132,22 @@
   }
 }
 
+/* Markalar / logolar  */
+@keyframes brands-slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-25%);
+  }
+}
+.brands-slider-track {
+  animation: brands-slide 35s linear infinite;
+}
+.brands-slider-track:hover {
+  animation-play-state: paused;
+}
+
 .container {
   width: 100%;
   margin-inline: auto;

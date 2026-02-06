@@ -120,9 +120,6 @@ export async function PATCH(request, { params }) {
     const discountPrice = parseFloatOrNull(body.discountPrice);
     const stock = parseIntOrZero(body.stock);
     const brand = String(body.brand ?? "").trim() || undefined;
-    const tags = Array.isArray(body.tags)
-      ? body.tags.filter((t) => typeof t === "string" && t.trim())
-      : [];
     const isNewProduct = Boolean(body.isNewProduct);
     const isFeatured = Boolean(body.isFeatured);
 
@@ -167,7 +164,6 @@ export async function PATCH(request, { params }) {
         stock,
         brand,
         specifications,
-        tags,
         isNewProduct,
         isFeatured,
       },
@@ -178,6 +174,35 @@ export async function PATCH(request, { params }) {
     console.error("PATCH /api/products/by-id/[id]", error);
     return NextResponse.json(
       { error: error.message || "Ürün güncellenemedi" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(_request, { params }) {
+  try {
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json(
+        { error: "Ürün id gerekli" },
+        { status: 400 }
+      );
+    }
+    const existing = await prisma.product.findUnique({
+      where: { id: String(id) },
+    });
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Ürün bulunamadı" },
+        { status: 404 }
+      );
+    }
+    await prisma.product.delete({ where: { id: String(id) } });
+    return NextResponse.json({ success: true, name: existing.name });
+  } catch (error) {
+    console.error("DELETE /api/products/by-id/[id]", error);
+    return NextResponse.json(
+      { error: error.message || "Ürün silinemedi" },
       { status: 500 }
     );
   }

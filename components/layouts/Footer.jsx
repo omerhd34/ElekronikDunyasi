@@ -1,13 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { SiteLogo } from "./SiteLogo";
+
+const paymentLogos = [
+ { name: "Troy", src: "/images/payments/troy.png", alt: "Troy" },
+ { name: "Mastercard", src: "/images/payments/mastercard.webp", alt: "Mastercard" },
+ { name: "Visa", src: "/images/payments/visa.png", alt: "Visa" },
+ { name: "American Express", src: "/images/payments/amex.png", alt: "American Express" },
+ { name: "PayTR", src: "/images/payments/paytr.svg", alt: "PayTR" },
+];
 
 const footerLinks = {
  kurumsal: [
   { href: "/biz-kimiz", label: "Biz Kimiz" },
   { href: "/iletisim", label: "İletişim" },
-  { href: "/sik-sorulan-sorular", label: "Sıkça Sorulan Sorular" },
+  { href: "/sss", label: "Sıkça Sorulan Sorular" },
   { href: "/iade-degisim", label: "İade & Değişim" },
  ],
  yasal: [
@@ -88,7 +97,25 @@ export function SiteFooter() {
       </ul>
      </div>
     </div>
-    <div className="mt-10 border-t border-emerald-800/40 pt-8 text-center text-sm text-emerald-300/70">
+    <div className="mt-10 flex flex-wrap items-center justify-center gap-4 border-t border-emerald-800/40 pt-8">
+     {paymentLogos.map((logo) => (
+      <span
+       key={logo.name}
+       className="inline-flex h-16 min-w-[88px] items-center justify-center rounded-xl bg-emerald-800/50 px-5 py-4 shadow-sm ring-1 ring-white/5"
+       title={logo.name}
+      >
+       <Image
+        src={logo.src}
+        alt={logo.alt}
+        width={96}
+        height={40}
+        className="h-10 w-auto max-w-[80px] object-contain object-center"
+        unoptimized
+       />
+      </span>
+     ))}
+    </div>
+    <div className="mt-6 text-center text-sm text-emerald-300/70">
      © {currentYear} Elektronik Dünyası. Tüm hakları saklıdır.
     </div>
    </div>

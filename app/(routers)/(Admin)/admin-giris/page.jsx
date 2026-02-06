@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +14,11 @@ import {
  CardHeader,
  CardTitle,
 } from "@/components/ui/card";
-import { Lock, Mail, ArrowRight, Shield } from "lucide-react";
+import { Lock, User, ArrowRight, Shield } from "lucide-react";
 
 export default function AdminGirisPage() {
- const [email, setEmail] = useState("");
+ const router = useRouter();
+ const [username, setUsername] = useState("");
  const [password, setPassword] = useState("");
  const [loading, setLoading] = useState(false);
  const [error, setError] = useState("");
@@ -24,13 +26,27 @@ export default function AdminGirisPage() {
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
+
+  if (!username.trim() || !password) {
+   setError("Kullanıcı adı ve şifre girin.");
+   return;
+  }
+
   setLoading(true);
   try {
-   await new Promise((r) => setTimeout(r, 800));
-   if (!email.trim() || !password) {
-    setError("E-posta ve şifre girin.");
+   const res = await fetch("/api/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: username.trim(), password }),
+   });
+   const data = await res.json();
+
+   if (!res.ok) {
+    setError(data.error || "Giriş yapılamadı.");
     return;
    }
+
+   router.push("/admin");
   } catch {
    setError("Giriş yapılamadı. Lütfen tekrar deneyin.");
   } finally {
@@ -62,19 +78,19 @@ export default function AdminGirisPage() {
       </div>
      )}
      <div className="space-y-2">
-      <Label htmlFor="email" className="text-sm font-medium">
-       E-posta
+      <Label htmlFor="username" className="text-sm font-medium">
+       Kullanıcı Adı
       </Label>
       <div className="relative">
-       <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+       <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
        <Input
-        id="email"
-        type="email"
-        placeholder="admin@ornek.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        id="username"
+        type="text"
+        placeholder="Kullanıcı Adı"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
         className="h-11 pl-10"
-        autoComplete="email"
+        autoComplete="username"
        />
       </div>
      </div>

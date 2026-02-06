@@ -14,8 +14,13 @@ import {
  CardHeader,
  CardTitle,
 } from "@/components/ui/card";
-import { categoryInfo } from "@/lib/product-utils";
-import { ChevronDown, ChevronUp, Plus, Trash2, X, Package, DollarSign, ImageIcon, ListChecks, Tag } from "lucide-react";
+import {
+ Dialog,
+ DialogContent,
+ DialogTitle,
+} from "@/components/ui/dialog";
+import { categoryInfo, formatPrice } from "@/lib/product-utils";
+import { ChevronDown, ChevronUp, Plus, Trash2, X, Package, DollarSign, ImageIcon, ListChecks, Search, Pencil, FolderOpen, LayoutGrid, TrendingUp, Star, Sparkles, Tag, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_OPTIONS = Object.keys(categoryInfo);
@@ -32,7 +37,6 @@ const emptyForm = (category = CATEGORY_OPTIONS[0] ?? "") => ({
  stock: "0",
  brand: "",
  color: "",
- tags: "",
  isNewProduct: false,
  isFeatured: false,
  specifications: [],
@@ -44,20 +48,29 @@ export default function UrunYonetimiPage() {
  const [loading, setLoading] = useState(false);
  const [message, setMessage] = useState({ type: "", text: "" });
  const [editingId, setEditingId] = useState(null);
+ const [deletingId, setDeletingId] = useState(null);
  const [form, setForm] = useState(emptyForm());
  const [specsOpen, setSpecsOpen] = useState(true);
  const [showForm, setShowForm] = useState(false);
  const fileInputRef = useRef(null);
+ const formCardRef = useRef(null);
+ const [imagePreviewIndex, setImagePreviewIndex] = useState(null);
+
+ const generateSlug = (name) =>
+  name
+   .trim()
+   .toLowerCase()
+   .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
+   .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
+   .replace(/\s+/g, "-")
+   .replace(/[^a-z0-9-]/g, "")
+   .replace(/-+/g, "-")
+   .replace(/^-|-$/g, "");
 
  const update = (key, value) => {
   setForm((prev) => ({ ...prev, [key]: value }));
   if (key === "name" && typeof value === "string") {
-   const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9ğüşıöç-]/gi, "");
-   setForm((p) => ({ ...p, slug: p.slug || slug }));
+   setForm((p) => ({ ...p, slug: generateSlug(value) }));
   }
  };
 
@@ -84,14 +97,13 @@ export default function UrunYonetimiPage() {
    name: product.name ?? "",
    slug: product.slug ?? "",
    description: product.description ?? "",
-   price: String(product.price ?? ""),
-   discountPrice: product.oldPrice != null ? String(product.oldPrice) : "",
+   price: product.oldPrice != null ? String(product.oldPrice) : String(product.price ?? ""),
+   discountPrice: product.oldPrice != null ? String(product.price) : "",
    category: product.category ?? CATEGORY_OPTIONS[0],
    images: Array.isArray(product.images) ? [...product.images] : [],
    stock: String(product.stock ?? 0),
    brand: product.brand ?? "",
    color: product.color ?? "",
-   tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
    isNewProduct: product.isNew ?? false,
    isFeatured: product.isFeatured ?? false,
    specifications: Array.isArray(product.specifications)
@@ -106,6 +118,7 @@ export default function UrunYonetimiPage() {
   });
   setMessage({ type: "", text: "" });
   setShowForm(true);
+  setTimeout(() => formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
  };
 
  const startNew = () => {
@@ -120,6 +133,27 @@ export default function UrunYonetimiPage() {
   setEditingId(null);
   setForm(emptyForm(form.category));
   setMessage({ type: "", text: "" });
+ };
+
+ const deleteProduct = async (product) => {
+  if (!window.confirm(`"${product.name}" ürününü silmek istediğinize emin misiniz?`)) return;
+  setDeletingId(product.id);
+  setMessage({ type: "", text: "" });
+  try {
+   const res = await fetch(`/api/products/by-id/${product.id}`, { method: "DELETE" });
+   const data = await res.json().catch(() => ({}));
+   if (!res.ok) {
+    setMessage({ type: "error", text: data.error || "Ürün silinemedi." });
+    return;
+   }
+   setMessage({ type: "success", text: `"${product.name}" silindi.` });
+   if (editingId === product.id) closeForm();
+   await loadProducts();
+  } catch (err) {
+   setMessage({ type: "error", text: err?.message || "Bağlantı hatası." });
+  } finally {
+   setDeletingId(null);
+  }
  };
 
  const triggerFileSelect = () => {
@@ -264,10 +298,6 @@ export default function UrunYonetimiPage() {
     stock: parseInt(form.stock, 10) || 0,
     brand: form.brand.trim() || undefined,
     color: form.color.trim() || undefined,
-    tags: form.tags
-     .split(",")
-     .map((t) => t.trim())
-     .filter(Boolean),
     isNewProduct: form.isNewProduct,
     isFeatured: form.isFeatured,
     specifications: form.specifications
@@ -300,6 +330,7 @@ export default function UrunYonetimiPage() {
      return;
     }
     setMessage({ type: "success", text: `Ürün güncellendi: ${data.name}` });
+    closeForm();
     await loadProducts();
    } else {
     const res = await fetch("/api/products", {
@@ -333,14 +364,232 @@ export default function UrunYonetimiPage() {
   }
  };
 
+ const [searchQuery, setSearchQuery] = useState("");
+ const [filterCategory, setFilterCategory] = useState("");
+ const [filterStock, setFilterStock] = useState("");
+ const [filterFeatured, setFilterFeatured] = useState("");
+ const [filterNew, setFilterNew] = useState("");
+ const [filterDiscounted, setFilterDiscounted] = useState("");
+ const [sortBy, setSortBy] = useState("date_desc");
+ const [showCategoryList, setShowCategoryList] = useState(false);
+
+ const toggleSort = (column) => {
+  if (column === "price") {
+   setSortBy((prev) => (prev === "price_asc" ? "price_desc" : "price_asc"));
+  } else if (column === "stock") {
+   setSortBy((prev) => (prev === "stock_asc" ? "stock_desc" : "stock_asc"));
+  }
+ };
+
+ const stats = {
+  total: products.length,
+  outOfStock: products.filter((p) => !p.inStock).length,
+  featured: products.filter((p) => p.isFeatured).length,
+  new: products.filter((p) => p.isNew).length,
+  discounted: products.filter((p) => p.oldPrice != null).length,
+ };
+
+ const filteredProducts = products
+  .filter((p) => {
+   if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    if (
+     !p.name?.toLowerCase().includes(q) &&
+     !p.category?.toLowerCase().includes(q) &&
+     !p.brand?.toLowerCase().includes(q)
+    )
+     return false;
+   }
+   if (filterCategory && p.category !== filterCategory) return false;
+   if (filterStock === "in" && !p.inStock) return false;
+   if (filterStock === "out" && p.inStock) return false;
+   if (filterFeatured === "yes" && !p.isFeatured) return false;
+   if (filterFeatured === "no" && p.isFeatured) return false;
+   if (filterNew === "yes" && !p.isNew) return false;
+   if (filterNew === "no" && p.isNew) return false;
+   if (filterDiscounted === "yes" && p.oldPrice == null) return false;
+   if (filterDiscounted === "no" && p.oldPrice != null) return false;
+   return true;
+  })
+  .sort((a, b) => {
+   switch (sortBy) {
+    case "date_asc":
+     return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+    case "date_desc":
+     return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+    case "price_asc":
+     return (a.price ?? 0) - (b.price ?? 0);
+    case "price_desc":
+     return (b.price ?? 0) - (a.price ?? 0);
+    case "name_asc":
+     return (a.name ?? "").localeCompare(b.name ?? "", "tr");
+    case "name_desc":
+     return (b.name ?? "").localeCompare(a.name ?? "", "tr");
+    case "stock_asc":
+     return (a.stock ?? 0) - (b.stock ?? 0);
+    case "stock_desc":
+     return (b.stock ?? 0) - (a.stock ?? 0);
+    default:
+     return 0;
+   }
+  });
+
  return (
-  <div className="mx-auto w-full max-w-6xl space-y-10">
-   <div className="space-y-1">
-    <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Ürün Yönetimi</h1>
-    <p className="text-base text-muted-foreground md:text-lg">
-     Ürün ekleyin veya düzenleyin. Fiyat, stok, görseller ve ürün özelliklerini yönetin.
-    </p>
+  <div className="w-full space-y-8">
+   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-1">
+     <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Ürün Yönetimi</h1>
+     <p className="text-base text-muted-foreground md:text-lg">
+      Toplam {products.length} ürün · Fiyat, stok, görseller ve ürün özelliklerini yönetin.
+     </p>
+    </div>
+    <Button type="button" onClick={startNew} className="shrink-0 gap-2 rounded-xl">
+     <Plus className="size-4" /> Yeni Ürün Ekle
+    </Button>
    </div>
+
+   {/* İstatistik kartları */}
+   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+    <Card className="rounded-xl border-blue-200/50 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/20">
+       <FolderOpen className="size-5 text-blue-600 dark:text-blue-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+       <p className="text-xs font-medium text-muted-foreground">Ürünler</p>
+      </div>
+     </CardContent>
+    </Card>
+    <button
+     type="button"
+     onClick={() => setShowCategoryList((prev) => !prev)}
+     className={cn(
+      "w-full rounded-xl border border-slate-200/50 bg-slate-50/50 dark:border-slate-700/30 dark:bg-slate-800/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-slate-500/50",
+      showCategoryList && "ring-2 ring-slate-500/50"
+     )}
+    >
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-500/20">
+       <LayoutGrid className="size-5 text-slate-600 dark:text-slate-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{CATEGORY_OPTIONS.length}</p>
+       <p className="text-xs font-medium text-muted-foreground">Kategoriler</p>
+      </div>
+     </CardContent>
+    </button>
+    <button
+     type="button"
+     onClick={() => setFilterStock((prev) => (prev === "out" ? "" : "out"))}
+     className={cn(
+      "w-full rounded-xl border border-red-200/50 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-500/50",
+      filterStock === "out" && "ring-2 ring-red-500/50"
+     )}
+    >
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
+       <TrendingUp className="size-5 text-red-600 dark:text-red-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{stats.outOfStock}</p>
+       <p className="text-xs font-medium text-muted-foreground">Stokta Olmayanlar</p>
+      </div>
+     </CardContent>
+    </button>
+    <button
+     type="button"
+     onClick={() => setFilterFeatured((prev) => (prev === "yes" ? "" : "yes"))}
+     className={cn(
+      "w-full rounded-xl border border-amber-200/50 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-amber-500/50",
+      filterFeatured === "yes" && "ring-2 ring-amber-500/50"
+     )}
+    >
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+       <Star className="size-5 text-amber-600 dark:text-amber-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{stats.featured}</p>
+       <p className="text-xs font-medium text-muted-foreground">Öne Çıkanlar</p>
+      </div>
+     </CardContent>
+    </button>
+    <button
+     type="button"
+     onClick={() => setFilterNew((prev) => (prev === "yes" ? "" : "yes"))}
+     className={cn(
+      "w-full rounded-xl border border-emerald-200/50 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
+      filterNew === "yes" && "ring-2 ring-emerald-500/50"
+     )}
+    >
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
+       <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{stats.new}</p>
+       <p className="text-xs font-medium text-muted-foreground">Yeniler</p>
+      </div>
+     </CardContent>
+    </button>
+    <button
+     type="button"
+     onClick={() => setFilterDiscounted((prev) => (prev === "yes" ? "" : "yes"))}
+     className={cn(
+      "w-full rounded-xl border border-violet-200/50 bg-violet-50/50 dark:border-violet-900/30 dark:bg-violet-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-violet-500/50",
+      filterDiscounted === "yes" && "ring-2 ring-violet-500/50"
+     )}
+    >
+     <CardContent className="flex items-center gap-4 p-4">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/20">
+       <Tag className="size-5 text-violet-600 dark:text-violet-400" />
+      </div>
+      <div>
+       <p className="text-2xl font-bold text-foreground">{stats.discounted}</p>
+       <p className="text-xs font-medium text-muted-foreground">İndirimliler</p>
+      </div>
+     </CardContent>
+    </button>
+   </div>
+
+   {showCategoryList && (
+    <Card className="rounded-xl border-slate-200/50 dark:border-slate-700/30">
+     <CardHeader className="pb-3">
+      <CardTitle className="text-lg flex items-center gap-2">
+       <LayoutGrid className="size-5 text-slate-600 dark:text-slate-400" />
+       Kategoriler
+      </CardTitle>
+      <CardDescription>Toplam {CATEGORY_OPTIONS.length} kategori</CardDescription>
+     </CardHeader>
+     <CardContent>
+      <ul className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+       {CATEGORY_OPTIONS.map((cat) => (
+        <li key={cat}>
+         <button
+          type="button"
+          onClick={() => {
+           setFilterCategory((prev) => (prev === cat ? "" : cat));
+           setShowCategoryList(false);
+          }}
+          className={cn(
+           "flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors hover:bg-muted/50",
+           filterCategory === cat ? "border-primary bg-primary/10" : "bg-muted/30"
+          )}
+         >
+          <div>
+           <p className="font-medium text-foreground">{categoryInfo[cat]?.title ?? cat}</p>
+          </div>
+          <span className="text-sm font-semibold text-muted-foreground">
+           {products.filter((p) => p.category === cat).length} ürün
+          </span>
+         </button>
+        </li>
+       ))}
+      </ul>
+     </CardContent>
+    </Card>
+   )}
 
    {message.text && (
     <Alert variant={message.type === "error" ? "destructive" : "default"} className="rounded-xl">
@@ -348,408 +597,533 @@ export default function UrunYonetimiPage() {
     </Alert>
    )}
 
+   {/* Arama */}
+   <div className="relative">
+    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    <Input
+     type="text"
+     placeholder="Ürün adı, kategori veya marka ile ara..."
+     value={searchQuery}
+     onChange={(e) => setSearchQuery(e.target.value)}
+     className="h-11 rounded-xl pl-10 bg-muted/30 border-input/80 focus:bg-background"
+    />
+   </div>
+
+   {/* Ürün tablosu */}
    <Card className="overflow-hidden">
-    <CardHeader className="flex flex-row items-start justify-between gap-4 border-b bg-muted/20 pb-6">
-     <div>
-      <CardTitle className="text-xl">Ürünler</CardTitle>
-      <CardDescription className="mt-1 text-base">
-       Listeden düzenlemek için ürünü seçin veya yeni ürün ekleyin.
-      </CardDescription>
-     </div>
-     <Button type="button" variant="default" size="sm" onClick={startNew} className="shrink-0">
-      + Yeni ürün
-     </Button>
-    </CardHeader>
-    <CardContent className="pt-6">
+    <CardContent className="p-0">
      {productsLoading ? (
-      <div className="flex items-center gap-3 py-8">
+      <div className="flex items-center justify-center gap-3 py-16">
        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-       <p className="text-sm text-muted-foreground">Yükleniyor…</p>
+       <p className="text-sm text-muted-foreground">Ürünler yükleniyor…</p>
       </div>
-     ) : products.length === 0 ? (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-       Henüz ürün yok. &quot;Yeni ürün&quot; ile ekleyerek başlayın.
-      </p>
+     ) : filteredProducts.length === 0 ? (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+       <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
+        <Package className="size-7 text-muted-foreground" />
+       </div>
+       <p className="text-sm font-medium text-foreground">
+        {products.length === 0 ? "Henüz ürün yok" : "Sonuç bulunamadı"}
+       </p>
+       <p className="mt-1 text-sm text-muted-foreground">
+        {products.length === 0
+         ? "\"Yeni Ürün Ekle\" butonu ile başlayın."
+         : `"${searchQuery}" için eşleşen ürün bulunamadı.`}
+       </p>
+      </div>
      ) : (
-      <ul className="space-y-2 text-sm">
-       {products.map((p) => (
-        <li
-         key={p.id}
-         className="flex items-center justify-between gap-2 rounded-xl border bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
-        >
-         <span className="truncate font-medium">{p.name}</span>
-         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-muted-foreground text-xs hidden sm:inline">{p.category}</span>
-          <Button
-           type="button"
-           variant="secondary"
-           size="sm"
-           className="h-8"
-           onClick={() => startEdit(p)}
-          >
-           Düzenle
-          </Button>
-         </div>
-        </li>
-       ))}
-      </ul>
+      <>
+       <div className="overflow-x-auto">
+        <table className="w-full min-w-[800px]">
+         <thead>
+          <tr className="border-b bg-muted/40">
+           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Ürün
+           </th>
+           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Kategori
+           </th>
+           <th className="px-4 py-3.5 text-left">
+            <button
+             type="button"
+             onClick={() => toggleSort("price")}
+             className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none hover:bg-muted/60 transition-colors rounded px-1 -mx-1 py-0.5 inline-flex items-center gap-1"
+            >
+             Fiyat (₺)
+             {sortBy === "price_asc" && <ArrowUp className="size-3.5" />}
+             {sortBy === "price_desc" && <ArrowDown className="size-3.5" />}
+            </button>
+           </th>
+           <th className="px-4 py-3.5 text-left">
+            <button
+             type="button"
+             onClick={() => toggleSort("stock")}
+             className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none hover:bg-muted/60 transition-colors rounded px-1 -mx-1 py-0.5 inline-flex items-center gap-1"
+            >
+             Stok
+             {sortBy === "stock_asc" && <ArrowUp className="size-3.5" />}
+             {sortBy === "stock_desc" && <ArrowDown className="size-3.5" />}
+            </button>
+           </th>
+           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Durum
+           </th>
+           <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            İşlemler
+           </th>
+          </tr>
+         </thead>
+         <tbody>
+          {filteredProducts.map((p) => (
+           <tr
+            key={p.id}
+            className={cn(
+             "border-b border-border/50 transition-colors hover:bg-muted/20",
+             editingId === p.id && "bg-primary/5"
+            )}
+           >
+            <td className="px-4 py-3.5">
+             <div className="flex items-center gap-3">
+              <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border bg-muted">
+               {p.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.image} alt="" className="h-full w-full object-cover" />
+               ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                 <ImageIcon className="size-5 text-muted-foreground/50" />
+                </div>
+               )}
+              </div>
+              <div className="min-w-0">
+               <p className="font-semibold text-foreground text-sm">{p.name}</p>
+               {p.brand && (
+                <p className="text-xs text-muted-foreground truncate">{p.brand}</p>
+               )}
+              </div>
+             </div>
+            </td>
+            <td className="px-4 py-3.5">
+             <p className="text-sm font-medium text-foreground">
+              {categoryInfo[p.category]?.title ?? p.category}
+             </p>
+            </td>
+            <td className="px-4 py-3.5">
+             <p className="text-sm font-bold text-foreground">{formatPrice(p.price)}</p>
+             {p.oldPrice != null && (
+              <p className="text-xs text-muted-foreground line-through">{formatPrice(p.oldPrice)}</p>
+             )}
+            </td>
+            <td className="px-4 py-3.5">
+             <p className="text-sm font-medium tabular-nums">{p.stock ?? 0}</p>
+            </td>
+            <td className="px-4 py-3.5">
+             <div className="flex flex-wrap gap-1.5">
+              {p.inStock ? (
+               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                <Check className="size-3" /> Stokta
+               </span>
+              ) : (
+               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                Stokta yok
+               </span>
+              )}
+              {p.isFeatured && (
+               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                <Star className="size-3" /> Öne Çıkan
+               </span>
+              )}
+              {p.isNew && (
+               <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                Yeni
+               </span>
+              )}
+             </div>
+            </td>
+            <td className="px-4 py-3.5 text-right">
+             <div className="flex items-center justify-end gap-1">
+              <Button
+               type="button"
+               variant="outline"
+               size="sm"
+               className="gap-1.5 rounded-lg text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 dark:border-blue-800 dark:hover:bg-blue-950/50"
+               onClick={() => startEdit(p)}
+               title="Düzenle"
+              >
+               <Pencil className="size-3.5" /> Düzenle
+              </Button>
+              <Button
+               type="button"
+               variant="outline"
+               size="sm"
+               className="gap-1.5 rounded-lg text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:hover:bg-red-950/50"
+               disabled={deletingId === p.id}
+               onClick={() => deleteProduct(p)}
+               title="Sil"
+              >
+               {deletingId === p.id ? (
+                <span className="size-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+               ) : (
+                <Trash2 className="size-3.5" />
+               )}{" "}
+               Sil
+              </Button>
+             </div>
+            </td>
+           </tr>
+          ))}
+         </tbody>
+        </table>
+       </div>
+       <div className="border-t bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{filteredProducts.length}</span> ürün listeleniyor
+       </div>
+      </>
      )}
     </CardContent>
    </Card>
 
    {showForm && (
-    <Card className="overflow-hidden">
-     <CardHeader className="flex flex-row items-start justify-between gap-4 border-b bg-muted/20 pb-6">
-      <div>
-       <CardTitle className="text-xl">{editingId ? "Ürünü düzenle" : "Yeni ürün ekle"}</CardTitle>
-       <CardDescription className="mt-1 text-base">
-        Zorunlu alanlar * ile işaretlidir. En az bir görsel ekleyin.
-       </CardDescription>
-      </div>
-      <Button type="button" variant="ghost" size="sm" onClick={closeForm} className="shrink-0">
-       Kapat
-      </Button>
-     </CardHeader>
-     <CardContent className="pt-6">
-      <form onSubmit={handleSubmit} className="w-full space-y-10">
-       {/* Temel bilgiler */}
-       <section className="space-y-4">
-        <div className="flex items-center gap-2 border-b pb-2">
-         <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-          <Package className="size-4 text-primary" />
+    <div ref={formCardRef}>
+     <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 border-b bg-muted/20 pb-6">
+       <div>
+        <CardTitle className="text-xl">{editingId ? "Ürünü düzenle" : "Yeni ürün ekle"}</CardTitle>
+        <CardDescription className="mt-1 text-base">
+         Zorunlu alanlar * ile işaretlidir. En az bir görsel ekleyin.
+        </CardDescription>
+       </div>
+       <Button type="button" variant="ghost" size="sm" onClick={closeForm} className="shrink-0">
+        Kapat
+       </Button>
+      </CardHeader>
+      <CardContent className="pt-6">
+       <form onSubmit={handleSubmit} className="w-full space-y-10">
+        {/* Temel bilgiler */}
+        <section className="space-y-4">
+         <div className="flex items-center gap-2 border-b pb-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+           <Package className="size-4 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground">Temel bilgiler</h3>
          </div>
-         <h3 className="font-semibold text-foreground">Temel bilgiler</h3>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="name" className="text-sm font-medium">Ürün adı *</Label>
-          <Input
-           id="name"
-           value={form.name}
-           onChange={(e) => update("name", e.target.value)}
-           placeholder="Örn: Apple MacBook Air M3"
-           required
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2">
-          <Label htmlFor="slug" className="text-sm font-medium">Slug (URL) *</Label>
-          <Input
-           id="slug"
-           value={form.slug}
-           onChange={(e) => update("slug", e.target.value)}
-           placeholder="macbook-air-m3"
-           required
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2">
-          <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
-          <select
-           id="category"
-           value={form.category}
-           onChange={(e) => update("category", e.target.value)}
-           required
-           className="flex h-11 w-full rounded-xl border border-input/80 bg-muted/30 px-3 py-2 text-sm focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-           {CATEGORY_OPTIONS.map((cat) => (
-            <option key={cat} value={cat}>
-             {categoryInfo[cat]?.title ?? cat}
-            </option>
-           ))}
-          </select>
-         </div>
-         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="description" className="text-sm font-medium">Açıklama *</Label>
-          <Textarea
-           id="description"
-           value={form.description}
-           onChange={(e) => update("description", e.target.value)}
-           placeholder="Ürün açıklaması"
-           rows={4}
-           required
-           className="rounded-xl border-input/80 bg-muted/30 focus:bg-background resize-none"
-          />
-         </div>
-        </div>
-       </section>
-
-       {/* Fiyat & Stok */}
-       <section className="space-y-4">
-        <div className="flex items-center gap-2 border-b pb-2">
-         <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10">
-          <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
-         </div>
-         <h3 className="font-semibold text-foreground">Fiyat & Stok</h3>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-         <div className="space-y-2">
-          <Label htmlFor="price" className="text-sm font-medium">Fiyat (₺) *</Label>
-          <Input
-           id="price"
-           type="number"
-           min="0"
-           step="0.01"
-           value={form.price}
-           onChange={(e) => update("price", e.target.value)}
-           required
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2">
-          <Label htmlFor="discountPrice" className="text-sm font-medium">İndirimli fiyat</Label>
-          <Input
-           id="discountPrice"
-           type="number"
-           min="0"
-           step="0.01"
-           value={form.discountPrice}
-           onChange={(e) => update("discountPrice", e.target.value)}
-           placeholder="Opsiyonel"
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2">
-          <Label htmlFor="stock" className="text-sm font-medium">Stok</Label>
-          <Input
-           id="stock"
-           type="number"
-           min="0"
-           value={form.stock}
-           onChange={(e) => update("stock", e.target.value)}
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-        </div>
-       </section>
-
-       {/* Görseller */}
-       <section className="space-y-4">
-        <div className="flex items-center gap-2 border-b pb-2">
-         <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10">
-          <ImageIcon className="size-4 text-amber-600 dark:text-amber-400" />
-         </div>
-         <h3 className="font-semibold text-foreground">Görseller *</h3>
-         <span className="ml-auto text-sm text-muted-foreground">({form.images.length}/{MAX_IMAGES})</span>
-        </div>
-        <input
-         ref={fileInputRef}
-         type="file"
-         accept="image/*"
-         multiple
-         className="hidden"
-         onChange={handleFileSelect}
-        />
-        <Button
-         type="button"
-         variant="secondary"
-         size="lg"
-         className="h-12 rounded-xl"
-         onClick={triggerFileSelect}
-         disabled={form.images.length >= MAX_IMAGES}
-        >
-         <ImageIcon className="mr-2 size-5" /> Ekle
-        </Button>
-        {form.images.length >= MAX_IMAGES && (
-         <p className="text-sm text-muted-foreground">En fazla {MAX_IMAGES} görsel ekleyebilirsiniz.</p>
-        )}
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-         {form.images.map((url, i) => (
-          <div key={i} className="group relative aspect-square overflow-hidden rounded-xl border-2 border-muted bg-muted shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
-           {/* eslint-disable-next-line @next/next/no-img-element */}
-           <img
-            src={url}
-            alt=""
-            className="h-full w-full object-cover"
-            onError={(e) => {
-             e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3Ctext x='50' y='50' fill='%239ca3af' text-anchor='middle' dy='.3em' font-size='11'%3EHata%3C/text%3E%3C/svg%3E";
-            }}
+         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+           <Label htmlFor="name" className="text-sm font-medium">Ürün adı *</Label>
+           <Input
+            id="name"
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            placeholder="Örn: Apple MacBook Air M3"
+            required
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
            />
-           <button
-            type="button"
-            className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
-            onClick={() => removeImage(i)}
-            aria-label="Görseli kaldır"
+          </div>
+          <div className="space-y-2">
+           <Label htmlFor="brand" className="text-sm font-medium">Marka</Label>
+           <Input
+            id="brand"
+            value={form.brand}
+            onChange={(e) => update("brand", e.target.value)}
+            placeholder="Örn: Apple"
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
+           />
+          </div>
+          <div className="space-y-2">
+           <Label htmlFor="color" className="text-sm font-medium">Renk</Label>
+           <Input
+            id="color"
+            value={form.color}
+            onChange={(e) => update("color", e.target.value)}
+            placeholder="Örn: Siyah, Beyaz"
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
+           />
+          </div>
+          <div className="space-y-2">
+           <Label htmlFor="category" className="text-sm font-medium">Kategori *</Label>
+           <select
+            id="category"
+            value={form.category}
+            onChange={(e) => update("category", e.target.value)}
+            required
+            className="flex h-11 w-full rounded-xl border border-input/80 bg-muted/30 pl-3 pr-12 py-2 text-sm focus:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none bg-size-[1.25rem_1.25rem] bg-position-[right_0.75rem_center] bg-no-repeat bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')]"
            >
-            <X className="size-3.5" />
-           </button>
+            {CATEGORY_OPTIONS.map((cat) => (
+             <option key={cat} value={cat}>
+              {categoryInfo[cat]?.title ?? cat}
+             </option>
+            ))}
+           </select>
           </div>
-         ))}
-        </div>
-       </section>
-
-       {/* Ürün Özellikleri */}
-       <section>
-        <button
-         type="button"
-         className={cn(
-          "flex w-full items-center justify-between rounded-xl border-2 px-4 py-3.5 text-left transition-colors",
-          specsOpen ? "border-primary/20 bg-primary/5" : "border-muted bg-muted/30 hover:bg-muted/50"
-         )}
-         onClick={() => setSpecsOpen(!specsOpen)}
-        >
-         <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10">
-           <ListChecks className="size-4 text-violet-600 dark:text-violet-400" />
+          <div className="space-y-2 sm:col-span-2">
+           <Label htmlFor="description" className="text-sm font-medium">Açıklama *</Label>
+           <Textarea
+            id="description"
+            value={form.description}
+            onChange={(e) => update("description", e.target.value)}
+            placeholder="Ürün açıklaması"
+            rows={4}
+            required
+            className="rounded-xl border-input/80 bg-muted/30 focus:bg-background resize-none"
+           />
           </div>
-          <span className="font-semibold text-foreground">Ürün Özellikleri</span>
          </div>
-         {specsOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
-        </button>
-        {specsOpen && (
-         <div className="mt-4 space-y-4 rounded-xl border border-muted bg-muted/20 p-4">
-          <div className="flex justify-end">
-           <Button type="button" variant="secondary" size="sm" className="rounded-lg" onClick={addSpecCategory}>
-            + Kategori Ekle
-           </Button>
+        </section>
+
+        {/* Fiyat & Stok */}
+        <section className="space-y-4">
+         <div className="flex items-center gap-2 border-b pb-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10">
+           <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="space-y-4">
-           {form.specifications.map((spec, catIndex) => (
-            <div key={catIndex} className="rounded-xl border border-muted/80 bg-background p-4 shadow-sm">
-             <div className="mb-3 flex items-center gap-2">
-              <Input
-               value={spec.category}
-               onChange={(e) => updateSpecCategory(catIndex, e.target.value)}
-               placeholder="Kategori adı (örn: Tasarım, Montaj)"
-               className="h-10 rounded-lg font-medium"
-              />
+          <h3 className="font-semibold text-foreground">Fiyat & Stok</h3>
+         </div>
+         <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-2">
+           <Label htmlFor="price" className="text-sm font-medium">Fiyat (₺) *</Label>
+           <Input
+            id="price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.price}
+            onChange={(e) => update("price", e.target.value)}
+            required
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
+           />
+          </div>
+          <div className="space-y-2">
+           <Label htmlFor="discountPrice" className="text-sm font-medium">İndirimli fiyat</Label>
+           <Input
+            id="discountPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.discountPrice}
+            onChange={(e) => update("discountPrice", e.target.value)}
+            placeholder="Opsiyonel"
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
+           />
+          </div>
+          <div className="space-y-2">
+           <Label htmlFor="stock" className="text-sm font-medium">Stok</Label>
+           <Input
+            id="stock"
+            type="number"
+            min="0"
+            value={form.stock}
+            onChange={(e) => update("stock", e.target.value)}
+            className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
+           />
+          </div>
+         </div>
+        </section>
+
+        {/* Görseller */}
+        <section className="space-y-4">
+         <div className="flex items-center gap-2 border-b pb-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10">
+           <ImageIcon className="size-4 text-amber-600 dark:text-amber-400" />
+          </div>
+          <h3 className="font-semibold text-foreground">Görseller *</h3>
+          <span className="ml-auto text-sm text-muted-foreground">({form.images.length}/{MAX_IMAGES})</span>
+         </div>
+         <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+         />
+         <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          className="h-12 rounded-xl"
+          onClick={triggerFileSelect}
+          disabled={form.images.length >= MAX_IMAGES}
+         >
+          <ImageIcon className="mr-2 size-5" /> Ekle
+         </Button>
+         {form.images.length >= MAX_IMAGES && (
+          <p className="text-sm text-muted-foreground">En fazla {MAX_IMAGES} görsel ekleyebilirsiniz.</p>
+         )}
+         <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-15">
+          {form.images.map((url, i) => (
+           <div key={i} className="group relative aspect-square max-w-[72px] overflow-hidden rounded-lg border-2 border-muted bg-muted shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
+            <button
+             type="button"
+             className="absolute inset-0 z-0 cursor-pointer"
+             onClick={() => setImagePreviewIndex(i)}
+             aria-label="Görseli büyüt"
+            >
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img
+              src={url}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+               e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect fill='%23e5e7eb' width='100' height='100'/%3E%3Ctext x='50' y='50' fill='%239ca3af' text-anchor='middle' dy='.3em' font-size='11'%3EHata%3C/text%3E%3C/svg%3E";
+              }}
+             />
+            </button>
+            <button
+             type="button"
+             className="absolute right-1 top-1 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
+             onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+             aria-label="Görseli kaldır"
+            >
+             <X className="size-3" />
+            </button>
+           </div>
+          ))}
+         </div>
+         <Dialog open={imagePreviewIndex !== null} onOpenChange={(open) => !open && setImagePreviewIndex(null)}>
+          <DialogContent className="max-w-4xl p-2 sm:p-4" showCloseButton={true}>
+           <DialogTitle className="sr-only">Görsel önizleme</DialogTitle>
+           {imagePreviewIndex !== null && form.images[imagePreviewIndex] && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+             src={form.images[imagePreviewIndex]}
+             alt="Önizleme"
+             className="max-h-[85vh] w-full object-contain rounded-lg"
+            />
+           )}
+          </DialogContent>
+         </Dialog>
+        </section>
+
+        {/* Ürün Özellikleri */}
+        <section>
+         <button
+          type="button"
+          className={cn(
+           "flex w-full items-center justify-between rounded-xl border-2 px-4 py-3.5 text-left transition-colors",
+           specsOpen ? "border-primary/20 bg-primary/5" : "border-muted bg-muted/30 hover:bg-muted/50"
+          )}
+          onClick={() => setSpecsOpen(!specsOpen)}
+         >
+          <div className="flex items-center gap-2">
+           <div className="flex size-8 items-center justify-center rounded-lg bg-violet-500/10">
+            <ListChecks className="size-4 text-violet-600 dark:text-violet-400" />
+           </div>
+           <span className="font-semibold text-foreground">Ürün Özellikleri</span>
+          </div>
+          {specsOpen ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
+         </button>
+         {specsOpen && (
+          <div className="mt-4 space-y-4 rounded-xl border border-muted bg-muted/20 p-4">
+           <div className="flex justify-end">
+            <Button type="button" variant="secondary" size="sm" className="rounded-lg gap-1.5" onClick={addSpecCategory}>
+             <Plus className="size-4" /> Kategori Ekle
+            </Button>
+           </div>
+           <div className="space-y-4">
+            {form.specifications.map((spec, catIndex) => (
+             <div key={catIndex} className="rounded-xl border border-muted/80 bg-background p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+               <Input
+                value={spec.category}
+                onChange={(e) => updateSpecCategory(catIndex, e.target.value)}
+                placeholder="Kategori adı (örn: Tasarım, Montaj)"
+                className="h-10 rounded-lg font-medium"
+               />
+               <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => removeSpecCategory(catIndex)}
+               >
+                <Trash2 className="size-4" /> Sil
+               </Button>
+              </div>
+              <div className="space-y-2">
+               {(spec.items ?? []).map((item, itemIndex) => (
+                <div key={itemIndex} className="flex gap-2">
+                 <Input
+                  value={item.key}
+                  onChange={(e) => updateSpecItem(catIndex, itemIndex, "key", e.target.value)}
+                  placeholder="Özellik adı"
+                  className="h-10 flex-1 rounded-lg"
+                 />
+                 <Input
+                  value={item.value}
+                  onChange={(e) => updateSpecItem(catIndex, itemIndex, "value", e.target.value)}
+                  placeholder="Değer"
+                  className="h-10 flex-1 rounded-lg"
+                 />
+                 <button
+                  type="button"
+                  className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => removeSpecItem(catIndex, itemIndex)}
+                  aria-label="Özelliği sil"
+                 >
+                  <X className="size-4" />
+                 </button>
+                </div>
+               ))}
+              </div>
               <Button
                type="button"
                variant="ghost"
                size="sm"
-               className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-               onClick={() => removeSpecCategory(catIndex)}
+               className="mt-2 rounded-lg text-muted-foreground"
+               onClick={() => addSpecItem(catIndex)}
               >
-               <Trash2 className="size-4" /> Sil
+               <Plus className="mr-1.5 size-4" /> Özellik Ekle
               </Button>
              </div>
-             <div className="space-y-2">
-              {(spec.items ?? []).map((item, itemIndex) => (
-               <div key={itemIndex} className="flex gap-2">
-                <Input
-                 value={item.key}
-                 onChange={(e) => updateSpecItem(catIndex, itemIndex, "key", e.target.value)}
-                 placeholder="Özellik adı"
-                 className="h-10 flex-1 rounded-lg"
-                />
-                <Input
-                 value={item.value}
-                 onChange={(e) => updateSpecItem(catIndex, itemIndex, "value", e.target.value)}
-                 placeholder="Değer"
-                 className="h-10 flex-1 rounded-lg"
-                />
-                <button
-                 type="button"
-                 className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                 onClick={() => removeSpecItem(catIndex, itemIndex)}
-                 aria-label="Özelliği sil"
-                >
-                 <X className="size-4" />
-                </button>
-               </div>
-              ))}
-             </div>
-             <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="mt-2 rounded-lg text-muted-foreground"
-              onClick={() => addSpecItem(catIndex)}
-             >
-              <Plus className="mr-1.5 size-4" /> Özellik Ekle
-             </Button>
-            </div>
-           ))}
+            ))}
+           </div>
           </div>
-         </div>
-        )}
-       </section>
-
-       {/* Marka, Renk, Etiketler */}
-       <section className="space-y-4">
-        <div className="flex items-center gap-2 border-b pb-2">
-         <div className="flex size-8 items-center justify-center rounded-lg bg-slate-500/10">
-          <Tag className="size-4 text-slate-600 dark:text-slate-400" />
-         </div>
-         <h3 className="font-semibold text-foreground">Marka, renk & etiketler</h3>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-         <div className="space-y-2">
-          <Label htmlFor="brand" className="text-sm font-medium">Marka</Label>
-          <Input
-           id="brand"
-           value={form.brand}
-           onChange={(e) => update("brand", e.target.value)}
-           placeholder="Örn: Apple"
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2">
-          <Label htmlFor="color" className="text-sm font-medium">Renk</Label>
-          <Input
-           id="color"
-           value={form.color}
-           onChange={(e) => update("color", e.target.value)}
-           placeholder="Örn: Siyah, Beyaz"
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="tags" className="text-sm font-medium">Etiketler (virgülle ayırın)</Label>
-          <Input
-           id="tags"
-           value={form.tags}
-           onChange={(e) => update("tags", e.target.value)}
-           placeholder="laptop, apple, m3"
-           className="h-11 rounded-xl border-input/80 bg-muted/30 focus:bg-background"
-          />
-         </div>
-        </div>
-       </section>
-
-       {/* Bayraklar & Gönder */}
-       <section className="flex flex-col gap-6 border-t pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-6 rounded-xl border bg-muted/20 p-4">
-         <label className="flex cursor-pointer items-center gap-3">
-          <Switch
-           id="isNewProduct"
-           checked={form.isNewProduct}
-           onCheckedChange={(v) => update("isNewProduct", v)}
-          />
-          <span className="text-sm font-medium">Yeni ürün</span>
-         </label>
-         <label className="flex cursor-pointer items-center gap-3">
-          <Switch
-           id="isFeatured"
-           checked={form.isFeatured}
-           onCheckedChange={(v) => update("isFeatured", v)}
-          />
-          <span className="text-sm font-medium">Öne çıkan</span>
-         </label>
-        </div>
-        <div className="flex gap-2">
-         <Button
-          type="submit"
-          size="lg"
-          className="min-w-[140px] rounded-xl"
-          disabled={loading}
-         >
-          {loading ? (editingId ? "Güncelleniyor…" : "Ekleniyor…") : editingId ? "Güncelle" : "Ürün Ekle"}
-         </Button>
-         {editingId ? (
-          <Button type="button" variant="outline" size="lg" className="rounded-xl" onClick={startNew}>
-           İptal
-          </Button>
-         ) : (
-          <Button type="button" variant="ghost" size="lg" className="rounded-xl" onClick={closeForm}>
-           İptal
-          </Button>
          )}
-        </div>
-       </section>
-      </form>
-     </CardContent>
-    </Card>
+        </section>
+
+        {/* Bayraklar & Gönder */}
+        <section className="flex flex-col gap-6 border-t pt-8 sm:flex-row sm:items-center sm:justify-between">
+         <div className="flex flex-wrap gap-6 rounded-xl border bg-muted/20 p-4">
+          <label className="flex cursor-pointer items-center gap-3">
+           <Switch
+            id="isNewProduct"
+            checked={form.isNewProduct}
+            onCheckedChange={(v) => update("isNewProduct", v)}
+           />
+           <span className="text-sm font-medium">Yeni ürün</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3">
+           <Switch
+            id="isFeatured"
+            checked={form.isFeatured}
+            onCheckedChange={(v) => update("isFeatured", v)}
+           />
+           <span className="text-sm font-medium">Öne çıkan</span>
+          </label>
+         </div>
+         <div className="flex gap-2">
+          <Button
+           type="submit"
+           size="lg"
+           className="min-w-[140px] rounded-xl"
+           disabled={loading}
+          >
+           {loading ? (editingId ? "Güncelleniyor…" : "Ekleniyor…") : editingId ? "Güncelle" : "Ürün Ekle"}
+          </Button>
+          {editingId ? (
+           <Button type="button" variant="outline" size="lg" className="rounded-xl" onClick={closeForm}>
+            İptal
+           </Button>
+          ) : (
+           <Button type="button" variant="ghost" size="lg" className="rounded-xl" onClick={closeForm}>
+            İptal
+           </Button>
+          )}
+         </div>
+        </section>
+       </form>
+      </CardContent>
+     </Card>
+    </div>
    )}
   </div>
  );

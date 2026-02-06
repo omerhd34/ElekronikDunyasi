@@ -1,14 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Heart, ShoppingCart, Star, Check, X } from "lucide-react";
+import { Heart, ShoppingCart, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/product-utils";
 import { cn } from "@/lib/utils";
 import { useFavorites } from "@/context/favorites-context";
 import { useCart } from "@/context/cart-context";
 
-export function ProductCard({ product }) {
+export function ProductCard({ product, variant }) {
  const {
   id,
   name,
@@ -18,6 +19,7 @@ export function ProductCard({ product }) {
   oldPrice,
   discount,
   image,
+  images: productImages,
   rating,
   reviewCount,
   isNew,
@@ -26,12 +28,21 @@ export function ProductCard({ product }) {
  } = product;
 
  const { isFavorite, toggleFavorite } = useFavorites();
- const { addItem: addToCart } = useCart();
+ const { addItem: addToCart, removeItem, items } = useCart();
+ const inCart = items.some((i) => i.productId === String(id));
+ const [imgIndex, setImgIndex] = useState(0);
  const favorite = isFavorite(id);
  const productUrl = `/kategori/${category}/${slug}`;
 
+ const images = productImages?.length > 0 ? productImages : image ? [image] : [];
+ const hasMultiple = images.length > 1;
+ const isWide = variant === "wide";
+
  return (
-  <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-emerald-100/50 hover:-translate-y-1">
+  <div className={cn(
+   "group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-emerald-100/50 mt-1",
+   isWide ? "flex flex-row" : "flex flex-col hover:-translate-y-1"
+  )}>
    {/* Badges */}
    <div className="absolute left-3 top-3 z-10 flex flex-col gap-2">
     {discount > 0 && (
@@ -63,24 +74,64 @@ export function ProductCard({ product }) {
     <Heart className={cn("size-5", favorite && "fill-current")} />
    </button>
 
-   <Link href={productUrl} className="relative block aspect-square overflow-hidden bg-gray-50">
-    <img
-     src={image}
-     alt={name}
-     className="h-full w-full object-cover"
-     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-    />
-    {!inStock && (
-     <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-800">
-       Stokta Yok
-      </span>
-     </div>
+   <div className={cn(
+    "relative block overflow-hidden bg-gray-50 shrink-0",
+    isWide ? "w-72 aspect-4/3 md:w-96 md:aspect-5/3 min-w-0" : "aspect-square"
+   )}>
+    <Link href={productUrl} className="block h-full w-full">
+     <img
+      src={images[imgIndex] || ""}
+      alt={name}
+      className="h-full w-full object-cover transition-opacity duration-200"
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+     />
+    </Link>
+    {hasMultiple && (
+     <>
+      <button
+       type="button"
+       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setImgIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+       }}
+       className="absolute left-1.5 top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-gray-600 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white hover:scale-110 group-hover:opacity-100"
+       aria-label="Önceki resim"
+      >
+       <ChevronLeft className="size-4" />
+      </button>
+      <button
+       type="button"
+       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setImgIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+       }}
+       className="absolute right-1.5 top-1/2 z-10 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-gray-600 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white hover:scale-110 group-hover:opacity-100"
+       aria-label="Sonraki resim"
+      >
+       <ChevronRight className="size-4" />
+      </button>
+      <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+       {images.map((_, idx) => (
+        <span
+         key={idx}
+         className={cn(
+          "size-1.5 rounded-full transition-all",
+          idx === imgIndex ? "bg-emerald-500 scale-125" : "bg-white/70"
+         )}
+        />
+       ))}
+      </div>
+     </>
     )}
-   </Link>
+   </div>
 
    {/* Content */}
-   <div className="flex flex-1 flex-col p-4">
+   <div className={cn(
+    "flex flex-1 flex-col p-4 min-w-0",
+    isWide && "justify-center"
+   )}>
     {/* Rating */}
     <div className="mb-2 flex items-center gap-1.5">
      <div className="flex items-center gap-0.5">
@@ -103,14 +154,14 @@ export function ProductCard({ product }) {
 
     {/* Title */}
     <Link href={productUrl}>
-     <h3 className="mb-2 line-clamp-2 min-h-10 text-sm font-medium text-gray-800 transition-colors hover:text-emerald-600">
+     <h3 className="line-clamp-2 min-h-10 text-sm font-medium text-gray-800 transition-colors hover:text-emerald-600">
       {name}
      </h3>
     </Link>
 
     {/* Specs */}
     {specs && specs.length > 0 && (
-     <div className="mb-3 flex flex-wrap gap-1">
+     <div className="flex flex-wrap gap-1">
       {specs.slice(0, 3).map((spec, i) => (
        <span
         key={i}
@@ -122,30 +173,13 @@ export function ProductCard({ product }) {
      </div>
     )}
 
-    {/* Stock Status */}
-    <div className="mb-3 flex items-center gap-1.5">
-     {inStock ? (
-      <>
-       <Check className="size-4 text-emerald-500" />
-       <span className="text-xs font-medium text-emerald-600">Stokta</span>
-      </>
-     ) : (
-      <>
-       <X className="size-4 text-red-500" />
-       <span className="text-xs font-medium text-red-600">Stokta Yok</span>
-      </>
-     )}
-    </div>
-
-    {/* Price - sabit yükseklik: indirimli/indirimsiz hep aynı kart boyu */}
+    {/* Price  */}
     <div className="mt-auto flex items-end justify-between">
-     <div className="flex min-h-11 flex-col justify-end">
-      {oldPrice ? (
-       <span className="text-xs text-gray-400 line-through">
+     <div className="flex h-11 items-end gap-2">
+      {oldPrice && (
+       <span className="mb-1 text-xs text-gray-400 line-through">
         {formatPrice(oldPrice)}
        </span>
-      ) : (
-       <span className="invisible text-xs">0</span>
       )}
       <span className="text-lg font-bold text-emerald-600">
        {formatPrice(price)}
@@ -158,9 +192,18 @@ export function ProductCard({ product }) {
       onClick={(e) => {
        e.preventDefault();
        e.stopPropagation();
-       if (inStock) addToCart(id);
+       if (inStock) {
+        if (inCart) removeItem(id);
+        else addToCart(id);
+       }
       }}
-      className="rounded-full bg-emerald-600 px-4 text-white shadow-lg shadow-emerald-200 transition-all hover:bg-emerald-700 hover:shadow-emerald-300 disabled:opacity-50"
+      className={cn(
+       "rounded-full px-4 shadow-lg transition-all disabled:opacity-50",
+       inCart
+        ? "bg-red-500 text-white shadow-red-200 hover:bg-red-600 hover:shadow-red-300"
+        : "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 hover:shadow-emerald-300"
+      )}
+      aria-label={inCart ? "Sepetten çıkar" : "Sepete ekle"}
      >
       <ShoppingCart className="size-5" />
      </Button>

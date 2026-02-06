@@ -19,11 +19,13 @@ const sortOptions = [
  { value: "price-desc", label: "Fiyat: Yüksekten Düşüğe" },
  { value: "rating", label: "En Yüksek Puan" },
  { value: "newest", label: "En Yeniler" },
- { value: "discount", label: "En Çok İndirimli" },
+ { value: "discount", label: "İndirimli" },
 ];
 
 const priceRanges = [
- { min: 0, max: 1000, label: "₺0 - ₺1.000" },
+ { min: 0, max: 300, label: "₺0 - ₺300" },
+ { min: 300, max: 600, label: "₺300 - ₺600" },
+ { min: 600, max: 1000, label: "₺600 - ₺1.000" },
  { min: 1000, max: 5000, label: "₺1.000 - ₺5.000" },
  { min: 5000, max: 15000, label: "₺5.000 - ₺15.000" },
  { min: 15000, max: 50000, label: "₺15.000 - ₺50.000" },
@@ -338,7 +340,7 @@ export default function KategoriPage({ params }) {
 
      {/* Products Grid */}
      <div className="flex-1">
-      {/* Active Filters Tags */}
+      {/* Active Filters */}
       {activeFiltersCount > 0 && (
        <div className="mb-4 flex flex-wrap items-center gap-2">
         {selectedBrands.map((brand) => (

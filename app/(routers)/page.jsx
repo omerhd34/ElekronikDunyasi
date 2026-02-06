@@ -22,48 +22,28 @@ import { Truck, ShieldCheck, CreditCard, Phone, Sparkles, Star } from "lucide-re
 
 import { ProductCard } from "@/components/ProductCard";
 import { categoryInfo } from "@/lib/product-utils";
-
+import { brands, musteriYorumlari } from "@/lib/site-config";
+import Image from 'next/image';
 const categories = Object.entries(categoryInfo);
-const faqs = [
- { id: "faq-1", q: "Kargom ne zaman ulaşır?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
- { id: "faq-2", q: "İade koşulları nelerdir?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
- { id: "faq-3", q: "Taksit seçenekleri var mı?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
- { id: "faq-4", q: "Ödeme ve Fatura İşlemleri", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
- { id: "faq-5", q: "Hangi kargo firmasıyla çalışıyorsunuz?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
- { id: "faq-6", q: "Kapıda ödeme var mı?", a: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos." },
-];
-
-const brands = [
- { name: "Philips", className: "font-sans font-bold tracking-tight hover:text-blue-800" },
- { name: "Stanley", className: "font-black tracking-tighter hover:text-yellow-500" },
- { name: "Rodi Tools", className: "font-mono font-bold hover:text-gray-700" },
- { name: "Sarex", className: "font-serif font-bold italic hover:text-red-600" },
- { name: "Morlife", className: "font-light tracking-[0.2em] hover:text-green-600" },
- { name: "Everton", className: "font-bold italic hover:text-blue-600" },
- { name: "King", className: "font-black uppercase hover:text-red-500" },
- { name: "POLYGOLD", className: "font-bold tracking-wider hover:text-yellow-600" },
- { name: "Castu", className: "font-serif font-medium hover:text-purple-600" },
- { name: "Lensun", className: "font-mono hover:text-orange-500" },
- { name: "Vesus", className: "italic hover:text-indigo-500" },
- { name: "Loosee", className: "font-bold tracking-tighter hover:text-pink-500" },
- { name: "Car Pto", className: "font-mono font-black hover:text-slate-800" },
-];
 
 export default function HomePage() {
  const router = useRouter();
  const [newProducts, setNewProducts] = useState([]);
  const [discountedProducts, setDiscountedProducts] = useState([]);
  const [featuredProducts, setFeaturedProducts] = useState([]);
+ const [faqs, setFaqs] = useState([]);
 
  useEffect(() => {
   Promise.all([
    fetch('/api/products?new=1').then((r) => (r.ok ? r.json() : [])),
    fetch('/api/products?discounted=1').then((r) => (r.ok ? r.json() : [])),
    fetch('/api/products?featured=1').then((r) => (r.ok ? r.json() : [])),
-  ]).then(([newList, discountedList, featuredList]) => {
+   fetch('/api/settings/faqs').then((r) => (r.ok ? r.json() : [])),
+  ]).then(([newList, discountedList, featuredList, faqList]) => {
    setNewProducts(newList || []);
    setDiscountedProducts(discountedList || []);
    setFeaturedProducts(featuredList || []);
+   setFaqs(Array.isArray(faqList) ? faqList : []);
   });
  }, []);
 
@@ -108,12 +88,14 @@ export default function HomePage() {
       </div>
      </div>
 
-     <div className="flex-1 w-full max-w-[750px] relative mt-8 lg:mt-0">
+     <div className="flex-1 w-full max-w-[750px] lg:max-w-[920px] relative mt-8 lg:mt-0 min-h-[280px] sm:min-h-[400px] md:min-h-[480px] lg:min-h-[550px]">
       <div className="absolute inset-0 bg-linear-to-b from-blue-500/20 to-transparent blur-3xl rounded-full transform scale-75 z-0"></div>
-      <img
-       src="fix.jpg"
+      <Image
+       src="/fix.jpg"
        alt="Hero Product"
-       className="relative z-10 w-full max-h-[280px] sm:max-h-[400px] md:max-h-[480px] lg:max-h-[550px] object-cover rounded-2xl sm:rounded-3xl shadow-2xl transform hover:scale-105 transition-all duration-700"
+       fill
+       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 750px, 920px"
+       className="relative z-10 object-cover rounded-2xl sm:rounded-3xl shadow-2xl transition-transform duration-700 hover:scale-[1.02]"
       />
      </div>
     </div>
@@ -232,25 +214,25 @@ export default function HomePage() {
         </h2>
         <p className="text-sm sm:text-base text-gray-500 mt-1 sm:mt-2">Sizin için özenle seçtiğimiz ürünler.</p>
        </div>
-       <Link href="/yeniler">
+       <Link href="/one-cikan-urunler">
         <Button variant="outline" className="hidden sm:flex rounded-full text-sm sm:text-base">
          Tümünü Gör
         </Button>
        </Link>
       </div>
 
-      <Carousel className="w-full" opts={{ align: "start", loop: featuredProducts.length > 4, dragFree: featuredProducts.length > 4, watchDrag: featuredProducts.length > 4 }}>
+      <Carousel className="w-full" opts={{ align: "start", loop: featuredProducts.slice(0, 6).length > 4, dragFree: featuredProducts.slice(0, 6).length > 4, watchDrag: featuredProducts.slice(0, 6).length > 4 }}>
        <CarouselContent className="-ml-2 sm:-ml-4 pb-4">
-        {featuredProducts.map((product) => (
+        {featuredProducts.slice(0, 6).map((product) => (
          <CarouselItem key={product.id} className="pl-2 sm:pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
           <ProductCard product={product} />
          </CarouselItem>
         ))}
        </CarouselContent>
-       {featuredProducts.length > 4 && (
+       {featuredProducts.slice(0, 6).length > 4 && (
         <>
-         <CarouselPrevious className="hidden md:flex -left-12 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
-         <CarouselNext className="hidden md:flex -right-12 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselPrevious className="hidden md:flex -left-15 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselNext className="hidden md:flex -right-15 text-amber-600 border-amber-200 hover:bg-amber-50 h-10 w-10 sm:h-12 sm:w-12" />
         </>
        )}
       </Carousel>
@@ -286,8 +268,8 @@ export default function HomePage() {
        </CarouselContent>
        {discountedProducts.length > 4 && (
         <>
-         <CarouselPrevious className="hidden md:flex -left-12 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
-         <CarouselNext className="hidden md:flex -right-12 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselPrevious className="hidden md:flex -left-15 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
+         <CarouselNext className="hidden md:flex -right-15 text-red-600 border-red-200 hover:bg-red-50 h-10 w-10 sm:h-12 sm:w-12" />
         </>
        )}
       </Carousel>
@@ -298,28 +280,36 @@ export default function HomePage() {
    {/* MÜŞTERİ YORUMLARI */}
    <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
     <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-gray-900">Müşterilerimiz Ne Diyor?</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-     {[1, 2, 3].map((i) => (
-      <div key={i} className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100">
-       <div className="flex gap-1 mb-4">
-        {Array.from({ length: 5 }).map((_, j) => (
-         <Sparkles key={j} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
-        ))}
-       </div>
-       <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
-        &ldquo;Ürün beklediğimden çok daha hızlı geldi. Paketleme harikaydı ve müşteri hizmetleri çok ilgiliydi. Kesinlikle tavsiye ederim.&ldquo;
-       </p>
-       <div className="flex items-center gap-3 sm:gap-4">
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs sm:text-sm shrink-0">
-         {i === 1 ? 'AH' : i === 2 ? 'MK' : 'ZS'}
-        </div>
-        <div className="min-w-0">
-         <h4 className="font-bold text-xs sm:text-sm text-gray-900">{i === 1 ? 'Ahmet H.' : i === 2 ? 'Merve K.' : 'Zeynep S.'}</h4>
-         <span className="text-xs text-gray-500">Onaylı Müşteri</span>
-        </div>
-       </div>
-      </div>
-     ))}
+    <div className="relative">
+     <Carousel className="w-full" opts={{ align: "start", loop: true }}>
+      <CarouselContent className="-ml-2 sm:-ml-4 pb-4">
+       {musteriYorumlari.map((t) => (
+        <CarouselItem key={t.initials + t.name} className="pl-2 sm:pl-4 basis-full md:basis-1/2 lg:basis-1/3">
+         <div className="bg-white p-6 sm:p-8 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 h-full">
+          <div className="flex gap-1 mb-4">
+           {Array.from({ length: 5 }).map((_, j) => (
+            <Sparkles key={j} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
+           ))}
+          </div>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+           &ldquo;{t.text}&rdquo;
+          </p>
+          <div className="flex items-center gap-3 sm:gap-4">
+           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs sm:text-sm shrink-0">
+            {t.initials}
+           </div>
+           <div className="min-w-0">
+            <h4 className="font-bold text-xs sm:text-sm text-gray-900">{t.name}</h4>
+            <span className="text-xs text-gray-500">Onaylı Müşteri</span>
+           </div>
+          </div>
+         </div>
+        </CarouselItem>
+       ))}
+      </CarouselContent>
+      <CarouselPrevious className="hidden md:flex -left-8 lg:-left-15 border-gray-200 bg-white hover:bg-gray-50 text-gray-700 h-10 w-10 sm:h-12 sm:w-12 rounded-full shadow-md" aria-label="Önceki yorumlar" />
+      <CarouselNext className="hidden md:flex -right-8 lg:-right-15 border-gray-200 bg-white hover:bg-gray-50 text-gray-700 h-10 w-10 sm:h-12 sm:w-12 rounded-full shadow-md" aria-label="Sonraki yorumlar" />
+     </Carousel>
     </div>
    </section>
 
@@ -328,36 +318,50 @@ export default function HomePage() {
     <div className="text-center mb-8 sm:mb-12">
      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Sık Sorulan Sorular</h2>
      <p className="text-sm sm:text-base text-gray-500 mt-2 sm:mt-3">Aklınıza takılan soruların cevapları.</p>
+     <Link
+      href="/sss"
+      className="inline-flex items-center gap-1.5 mt-4 text-sm font-medium text-emerald-600 hover:text-emerald-700"
+     >
+      Tüm soruları gör
+      <span aria-hidden>→</span>
+     </Link>
     </div>
 
     <Accordion type="single" collapsible className="w-full space-y-3 sm:space-y-4">
-     {faqs.map((faq) => (
+     {faqs.slice(0, 5).map((faq) => (
       <AccordionItem key={faq.id} value={faq.id} className="border border-gray-200 rounded-xl px-2 sm:px-3 bg-white data-[state=open]:border-blue-200 data-[state=open]:ring-2 sm:data-[state=open]:ring-4 data-[state=open]:ring-blue-50 transition-all">
        <AccordionTrigger className="text-left font-medium text-sm sm:text-base text-gray-800 hover:text-blue-600 py-3 sm:py-4 px-3 sm:px-4 hover:no-underline">
-        {faq.q}
+        {faq.question}
        </AccordionTrigger>
        <AccordionContent className="text-sm sm:text-base text-gray-600 px-3 sm:px-4 pb-3 sm:pb-4 leading-relaxed">
-        {faq.a}
+        {faq.answer}
        </AccordionContent>
       </AccordionItem>
      ))}
     </Accordion>
    </section>
 
-   {/* MARKALAR BANDI */}
+   {/* MARKALAR BANDI - 2 satır, otomatik kayan slider */}
    <section className="py-8 sm:py-10 border-b border-gray-100 bg-white">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-     <p className="text-center text-xs sm:text-sm font-medium text-gray-400 mb-6 sm:mb-8 uppercase tracking-wider">
+     <p className="text-center text-xs sm:text-sm md:text-lg font-medium text-gray-400 mb-6 sm:mb-8 uppercase tracking-wider">
       Dünyanın En İyi Markaları Burada
      </p>
-     <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 lg:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-      {brands.map((brand, index) => (
-       <span
-        key={index}
-        className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold cursor-pointer transition-colors ${brand.className}`}
-       >
-        {brand.name}
-       </span>
+     <div className="flex flex-col gap-4 sm:gap-6">
+      {[brands.slice(0, Math.ceil(brands.length / 2)), brands.slice(Math.ceil(brands.length / 2))].map((rowBrands, rowIndex) => (
+       <div key={rowIndex} className="overflow-hidden mask-[linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        <div className="brands-slider-track flex items-center gap-4 sm:gap-6 md:gap-8 lg:gap-16 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500 w-max">
+         {[...rowBrands, ...rowBrands, ...rowBrands, ...rowBrands].map((brand, index) => (
+          <Link
+           key={`${rowIndex}-${index}`}
+           href={`/marka/${encodeURIComponent(brand.name)}`}
+           className={`shrink-0 text-base sm:text-lg md:text-xl lg:text-2xl font-bold cursor-pointer transition-colors hover:opacity-100 whitespace-nowrap ${brand.className}`}
+          >
+           {brand.name}
+          </Link>
+         ))}
+        </div>
+       </div>
       ))}
      </div>
     </div>

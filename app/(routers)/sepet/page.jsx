@@ -12,17 +12,18 @@ export default function SepetPage() {
  const [productsMap, setProductsMap] = useState({});
  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (items.length === 0) {
-      queueMicrotask(() => {
-        setProductsMap({});
-        setLoading(false);
-      });
-      return;
-    }
-    setLoading(true);
-    const uniq = [...new Set(items.map((i) => i.productId))];
-    Promise.all(
+ useEffect(() => {
+  if (items.length === 0) {
+   queueMicrotask(() => {
+    setProductsMap({});
+    setLoading(false);
+   });
+   return;
+  }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  setLoading(true);
+  const uniq = [...new Set(items.map((i) => i.productId))];
+  Promise.all(
    uniq.map((id) =>
     fetch(`/api/products/by-id/${id}`)
      .then((r) => (r.ok ? r.json() : null))
@@ -62,6 +63,20 @@ export default function SepetPage() {
    ),
   [cartItems]
  );
+
+ const [shippingCost, setShippingCost] = useState(140);
+ useEffect(() => {
+  fetch("/api/settings/shipping-cost")
+   .then((r) => (r.ok ? r.json() : {}))
+   .then((data) => {
+    const cost = typeof data?.shippingCost === "number" && data.shippingCost >= 0
+     ? data.shippingCost
+     : 140;
+    setShippingCost(cost);
+   })
+   .catch(() => { });
+ }, []);
+ const grandTotal = totalPrice + shippingCost;
 
  return (
   <div className="min-h-screen bg-gray-50/50">
@@ -172,10 +187,14 @@ export default function SepetPage() {
           <span>Ara Toplam ({totalCount} ürün)</span>
           <span className="font-medium text-gray-800">{formatPrice(totalPrice)}</span>
          </div>
+         <div className="flex justify-between text-gray-600">
+          <span>Kargo Ücreti</span>
+          <span className="font-medium text-gray-800">{formatPrice(shippingCost)}</span>
+         </div>
         </div>
         <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
          <span className="font-semibold text-gray-800">Toplam</span>
-         <span className="text-xl font-bold text-emerald-600">{formatPrice(totalPrice)}</span>
+         <span className="text-xl font-bold text-emerald-600">{formatPrice(grandTotal)}</span>
         </div>
         <Button
          asChild
