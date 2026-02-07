@@ -82,7 +82,11 @@ function FavorilerHoverContent({ favoriteIds }) {
       </Link>
       <button
        type="button"
-       onClick={() => removeFavorites([p.id])}
+       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        removeFavorites([p.id]);
+       }}
        aria-label="Favorilerden kaldır"
        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer"
       >
@@ -161,7 +165,11 @@ function SepetHoverContent({ cartItems }) {
       </Link>
       <button
        type="button"
-       onClick={() => removeItem(p.id)}
+       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        removeItem(p.id);
+       }}
        aria-label="Sepetten kaldır"
        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive cursor-pointer"
       >

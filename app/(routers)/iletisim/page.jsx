@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { MapPin, Clock, Phone, Mail, Send, X, ZoomIn } from "lucide-react";
+import { SiWhatsapp, SiInstagram, SiFacebook } from "react-icons/si";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
-const ADRES = "Mehmet Akif, Recep Ayan Cd. 23B, 34406, Çekmeköy/İstanbul";
-const TELEFON = "0546 219 72 21";
+const ADRES = "Mehmet Akif Mahallesi, Recep Ayan Caddesi, No: 23B, 34406, Çekmeköy/İstanbul";
+const TELEFON1 = "0546 219 72 21";
+const TELEFON2 = "0505 891 81 81";
+const INSTAGRAM = "https://www.instagram.com/elektronik_dunyasi34/";
+const FACEBOOK = "https://www.facebook.com/modagiyim3434/?locale=tr_TR";
 const GOOGLE_MAPS_EMBED = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3010.387843688099!2d29.190566999999994!3d41.016769999999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cacf2779a48c45%3A0x416c273604ffeee2!2zRUxFS1RST07EsEsgRMOcTllBU0k!5e0!3m2!1str!2str!4v1770239287331!5m2!1str!2str";
 
 const CALISMA_SAATLERI = {
@@ -51,56 +55,32 @@ function suanAcikMi() {
  return toplamDakika >= saatToDakika(acilis) && toplamDakika < saatToDakika(kapanis);
 }
 
-function calismaSaatleriGruplu() {
- const slotToIndices = {};
- GUNLER.forEach((_, i) => {
-  const { acilis, kapanis } = CALISMA_SAATLERI[i];
-  const key = `${acilis}-${kapanis}`;
-  if (!slotToIndices[key]) slotToIndices[key] = [];
-  slotToIndices[key].push(i);
- });
- return Object.entries(slotToIndices).map(([key, indices]) => {
-  const [acilis, kapanis] = key.split("-");
-  indices.sort((a, b) => a - b);
-  const runs = [];
-  let start = indices[0];
-  for (let k = 0; k < indices.length; k++) {
-   const curr = indices[k];
-   const next = indices[k + 1];
-   if (next !== curr + 1) {
-    runs.push(start === curr ? GUNLER[curr] : `${GUNLER[start]} – ${GUNLER[curr]}`);
-    start = next;
-   }
-  }
-  return { dayLabel: runs.join(", "), acilis, kapanis };
- });
-}
-
 function SaatlerCard({ acik }) {
- const gruplu = calismaSaatleriGruplu();
  const now = new Date();
  const bugun = getGunIndex(now.getDay());
  const { acilis, kapanis } = CALISMA_SAATLERI[bugun];
 
  return (
-  <Card className="border-0 shadow-lg bg-white h-full flex flex-col">
-   <CardContent className="flex items-start gap-4 py-5 flex-1">
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+  <Card className="border border-amber-100/80 bg-white shadow-md shadow-gray-200/50 rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-amber-100/30 hover:-translate-y-0.5">
+   <CardContent className="flex items-start gap-3 py-4 px-4 flex-1">
+    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-amber-100 to-amber-50 text-amber-600 ring-2 ring-amber-200/50">
      <Clock className="size-5" />
     </div>
     <div className="min-w-0 w-full">
-     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Çalışma Saatleri</p>
-     <p className="text-sm font-medium text-foreground mt-0.5">
+     <p className="text-xs font-semibold text-amber-700/90 uppercase tracking-widest">Çalışma Saatleri</p>
+     <p className="text-sm font-semibold text-foreground mt-1">
       {GUNLER[bugun]}: {acilis} – {kapanis}
-      <span className={cn("ml-1.5 text-xs font-semibold", acik ? "text-emerald-600" : "text-red-600")}>
-       ({acik ? "Açık" : "Kapalı"})
+      <span className={cn("ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium", acik ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>
+       {acik ? "Açık" : "Kapalı"}
       </span>
      </p>
-     <ul className="mt-2 space-y-1.5 text-sm border-t pt-2">
-      {gruplu.map(({ dayLabel, acilis: a, kapanis: k }) => (
-       <li key={`${a}-${k}`} className="flex justify-between gap-3">
-        <span className="text-muted-foreground">{dayLabel}</span>
-        <span className="tabular-nums font-medium text-foreground">{a} – {k}</span>
+     <ul className="mt-2 space-y-1 text-sm border-t border-amber-100 pt-2">
+      {GUNLER.map((gunAdi, i) => (
+       <li key={gunAdi} className="flex justify-between gap-3 text-muted-foreground">
+        <span>{gunAdi}</span>
+        <span className="tabular-nums font-medium text-foreground shrink-0">
+         {CALISMA_SAATLERI[i].acilis} – {CALISMA_SAATLERI[i].kapanis}
+        </span>
        </li>
       ))}
      </ul>
@@ -214,27 +194,82 @@ export default function IletisimPage() {
    <div className="container px-4 py-10 md:py-14">
     {/* Hızlı bilgi kartları */}
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 -mt-12 relative z-10 mb-12 items-stretch">
-     <Card className="border-0 shadow-lg bg-white h-full flex flex-col">
-      <CardContent className="flex items-center gap-4 py-5 flex-1">
-       <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+     <Card className="border border-emerald-100/80 bg-white shadow-md shadow-gray-200/50 rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-100/30 hover:-translate-y-0.5">
+      <CardContent className="flex items-start gap-3 py-4 px-4 flex-1">
+       <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-100 to-emerald-50 text-emerald-600 ring-2 ring-emerald-200/50">
         <MapPin className="size-5" />
        </div>
        <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adres</p>
-        <p className="text-sm font-medium text-foreground leading-snug mt-0.5">{ADRES}</p>
+        <p className="text-xs font-semibold text-emerald-700/90 uppercase tracking-widest">Adres</p>
+        <p className="text-sm font-medium text-foreground leading-snug mt-1">{ADRES}</p>
        </div>
       </CardContent>
      </Card>
-     <Card className="border-0 shadow-lg bg-white h-full flex flex-col">
-      <CardContent className="flex items-center gap-4 py-5 flex-1">
-       <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-        <Phone className="size-5" />
+     <Card className="border border-slate-100 bg-white shadow-md shadow-gray-200/50 rounded-2xl h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-slate-100/50 hover:-translate-y-0.5">
+      <CardContent className="flex flex-col gap-3 py-4 px-4 flex-1">
+       <div className="flex items-center gap-3">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-blue-100 to-blue-50 text-blue-600 ring-2 ring-blue-200/50">
+         <Phone className="size-5" />
+        </div>
+        <p className="text-xs font-semibold text-blue-700/90 uppercase tracking-widest">İletişim</p>
        </div>
-       <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Telefon</p>
-        <a href={`tel:${TELEFON.replace(/\s/g, "")}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-         {TELEFON}
-        </a>
+       <div className="space-y-3">
+        <div>
+         <p className="text-xs font-medium text-muted-foreground mb-1.5">Telefon</p>
+         <ul className="space-y-1.5">
+          <li className="flex items-center justify-between gap-2 rounded-lg bg-gray-50/80 py-1.5 px-2.5">
+           <a href={`tel:${TELEFON1.replace(/\s/g, "")}`} className="text-sm font-semibold text-foreground hover:text-emerald-600 transition-colors">
+            {TELEFON1}
+           </a>
+           <a
+            href={`https://wa.me/90${TELEFON1.replace(/\D/g, "").replace(/^0/, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center justify-center size-8 rounded-full bg-[#25D366] text-white shadow-sm transition-all hover:scale-105 hover:shadow-md"
+            aria-label="WhatsApp ile ara"
+           >
+            <SiWhatsapp className="size-4" />
+           </a>
+          </li>
+          <li className="flex items-center justify-between gap-2 rounded-lg bg-gray-50/80 py-1.5 px-2.5">
+           <a href={`tel:${TELEFON2.replace(/\s/g, "")}`} className="text-sm font-semibold text-foreground hover:text-emerald-600 transition-colors">
+            {TELEFON2}
+           </a>
+           <a
+            href={`https://wa.me/90${TELEFON2.replace(/\D/g, "").replace(/^0/, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center justify-center size-8 rounded-full bg-[#25D366] text-white shadow-sm transition-all hover:scale-105 hover:shadow-md"
+            aria-label="WhatsApp ile ara"
+           >
+            <SiWhatsapp className="size-4" />
+           </a>
+          </li>
+         </ul>
+        </div>
+        <div className="border-t border-slate-100 pt-3">
+         <p className="text-xs font-medium text-muted-foreground mb-2">Sosyal Medya</p>
+         <div className="flex items-center gap-2">
+          <a
+           href={INSTAGRAM}
+           target="_blank"
+           rel="noopener noreferrer"
+           className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-pink-100 to-purple-100 text-pink-600 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+           aria-label="Instagram"
+          >
+           <SiInstagram className="size-4" />
+          </a>
+          <a
+           href={FACEBOOK}
+           target="_blank"
+           rel="noopener noreferrer"
+           className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-blue-100 to-blue-50 text-[#1877F2] shadow-sm transition-all hover:scale-105 hover:shadow-md"
+           aria-label="Facebook"
+          >
+           <SiFacebook className="size-4" />
+          </a>
+         </div>
+        </div>
        </div>
       </CardContent>
      </Card>

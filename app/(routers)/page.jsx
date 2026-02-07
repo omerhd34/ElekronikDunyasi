@@ -341,7 +341,7 @@ export default function HomePage() {
     </Accordion>
    </section>
 
-   {/* MARKALAR BANDI - 2 satır, otomatik kayan slider */}
+   {/* MARKALAR BANDI */}
    <section className="py-8 sm:py-10 border-b border-gray-100 bg-white">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
      <p className="text-center text-xs sm:text-sm md:text-lg font-medium text-gray-400 mb-6 sm:mb-8 uppercase tracking-wider">

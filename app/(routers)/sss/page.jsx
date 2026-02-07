@@ -115,11 +115,10 @@ export default function SikSorulanSorularPage() {
       Aradığınız cevabı bulamadınız mı?
      </p>
      <p className="mt-2 text-blue-600">
-      Hafta içi 09:00 - 18:00 arası{" "}
-      <a href="tel:05462197221" className="font-bold hover:underline">
-       0546 219 72 21
+      <a href="/iletisim" className="font-bold hover:underline">
+       İletişim
       </a>{" "}
-      numaralı hattan bize ulaşabilirsiniz.
+      sayfasından bize ulaşabilirsiniz.
      </p>
     </div>
    </div>
