@@ -15,6 +15,7 @@ export default function AramaPage() {
 
  useEffect(() => {
   if (!q.trim()) {
+   // eslint-disable-next-line react-hooks/set-state-in-effect
    setResults([]);
    return;
   }

@@ -1,9 +1,0 @@
-const SiparislerimPage = () => {
- return (
-  <div>
-   <h1>Siparişlerim</h1>
-  </div>
- );
-};
-
-export default SiparislerimPage;

@@ -1,5 +1,3 @@
-import React from 'react';
-
 const GizlilikPolitikasiPage = () => {
  return (
   <div className="bg-gray-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
@@ -12,7 +10,6 @@ const GizlilikPolitikasiPage = () => {
     </div>
 
     <div className="space-y-6 text-gray-700 leading-relaxed">
-
      {/* Giriş */}
      <section>
       <p>

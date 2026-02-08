@@ -19,28 +19,13 @@ import {
  DialogContent,
  DialogTitle,
 } from "@/components/ui/dialog";
-import { categoryInfo, formatPrice } from "@/lib/product-utils";
-import { ChevronDown, ChevronUp, Plus, Trash2, X, Package, DollarSign, ImageIcon, ListChecks, Search, Pencil, FolderOpen, LayoutGrid, TrendingUp, Star, Sparkles, Tag, ArrowUp, ArrowDown, Check } from "lucide-react";
+import { categoryInfo } from "@/lib/product-utils";
+import { ChevronDown, ChevronUp, Plus, Trash2, X, Package, DollarSign, ImageIcon, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const CATEGORY_OPTIONS = Object.keys(categoryInfo);
-const MAX_IMAGES = 15;
-
-const emptyForm = (category = CATEGORY_OPTIONS[0] ?? "") => ({
- name: "",
- slug: "",
- description: "",
- price: "",
- discountPrice: "",
- category,
- images: [],
- stock: "0",
- brand: "",
- color: "",
- isNewProduct: false,
- isFeatured: false,
- specifications: [],
-});
+import { CATEGORY_OPTIONS, MAX_IMAGES, emptyForm, generateSlug } from "@/components/admin/product-management/productConstants";
+import ProductStats from "@/components/admin/product-management/ProductStats";
+import ProductSearchBar from "@/components/admin/product-management/ProductSearchBar";
+import ProductTable from "@/components/admin/product-management/ProductTable";
 
 export default function UrunYonetimiPage() {
  const [products, setProducts] = useState([]);
@@ -55,17 +40,6 @@ export default function UrunYonetimiPage() {
  const fileInputRef = useRef(null);
  const formCardRef = useRef(null);
  const [imagePreviewIndex, setImagePreviewIndex] = useState(null);
-
- const generateSlug = (name) =>
-  name
-   .trim()
-   .toLowerCase()
-   .replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s")
-   .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ç/g, "c")
-   .replace(/\s+/g, "-")
-   .replace(/[^a-z0-9-]/g, "")
-   .replace(/-+/g, "-")
-   .replace(/^-|-$/g, "");
 
  const update = (key, value) => {
   setForm((prev) => ({ ...prev, [key]: value }));
@@ -448,148 +422,22 @@ export default function UrunYonetimiPage() {
     </Button>
    </div>
 
-   {/* İstatistik kartları */}
-   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-    <Card className="rounded-xl border-blue-200/50 bg-blue-50/50 dark:border-blue-900/30 dark:bg-blue-950/20">
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/20">
-       <FolderOpen className="size-5 text-blue-600 dark:text-blue-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-       <p className="text-xs font-medium text-muted-foreground">Ürünler</p>
-      </div>
-     </CardContent>
-    </Card>
-    <button
-     type="button"
-     onClick={() => setShowCategoryList((prev) => !prev)}
-     className={cn(
-      "w-full rounded-xl border border-slate-200/50 bg-slate-50/50 dark:border-slate-700/30 dark:bg-slate-800/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-slate-500/50",
-      showCategoryList && "ring-2 ring-slate-500/50"
-     )}
-    >
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-500/20">
-       <LayoutGrid className="size-5 text-slate-600 dark:text-slate-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{CATEGORY_OPTIONS.length}</p>
-       <p className="text-xs font-medium text-muted-foreground">Kategoriler</p>
-      </div>
-     </CardContent>
-    </button>
-    <button
-     type="button"
-     onClick={() => setFilterStock((prev) => (prev === "out" ? "" : "out"))}
-     className={cn(
-      "w-full rounded-xl border border-red-200/50 bg-red-50/50 dark:border-red-900/30 dark:bg-red-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-red-500/50",
-      filterStock === "out" && "ring-2 ring-red-500/50"
-     )}
-    >
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-500/20">
-       <TrendingUp className="size-5 text-red-600 dark:text-red-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{stats.outOfStock}</p>
-       <p className="text-xs font-medium text-muted-foreground">Stokta Olmayanlar</p>
-      </div>
-     </CardContent>
-    </button>
-    <button
-     type="button"
-     onClick={() => setFilterFeatured((prev) => (prev === "yes" ? "" : "yes"))}
-     className={cn(
-      "w-full rounded-xl border border-amber-200/50 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-amber-500/50",
-      filterFeatured === "yes" && "ring-2 ring-amber-500/50"
-     )}
-    >
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
-       <Star className="size-5 text-amber-600 dark:text-amber-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{stats.featured}</p>
-       <p className="text-xs font-medium text-muted-foreground">Öne Çıkanlar</p>
-      </div>
-     </CardContent>
-    </button>
-    <button
-     type="button"
-     onClick={() => setFilterNew((prev) => (prev === "yes" ? "" : "yes"))}
-     className={cn(
-      "w-full rounded-xl border border-emerald-200/50 bg-emerald-50/50 dark:border-emerald-900/30 dark:bg-emerald-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-emerald-500/50",
-      filterNew === "yes" && "ring-2 ring-emerald-500/50"
-     )}
-    >
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
-       <Sparkles className="size-5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{stats.new}</p>
-       <p className="text-xs font-medium text-muted-foreground">Yeniler</p>
-      </div>
-     </CardContent>
-    </button>
-    <button
-     type="button"
-     onClick={() => setFilterDiscounted((prev) => (prev === "yes" ? "" : "yes"))}
-     className={cn(
-      "w-full rounded-xl border border-violet-200/50 bg-violet-50/50 dark:border-violet-900/30 dark:bg-violet-950/20 text-left transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-violet-500/50",
-      filterDiscounted === "yes" && "ring-2 ring-violet-500/50"
-     )}
-    >
-     <CardContent className="flex items-center gap-4 p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/20">
-       <Tag className="size-5 text-violet-600 dark:text-violet-400" />
-      </div>
-      <div>
-       <p className="text-2xl font-bold text-foreground">{stats.discounted}</p>
-       <p className="text-xs font-medium text-muted-foreground">İndirimliler</p>
-      </div>
-     </CardContent>
-    </button>
-   </div>
-
-   {showCategoryList && (
-    <Card className="rounded-xl border-slate-200/50 dark:border-slate-700/30">
-     <CardHeader className="pb-3">
-      <CardTitle className="text-lg flex items-center gap-2">
-       <LayoutGrid className="size-5 text-slate-600 dark:text-slate-400" />
-       Kategoriler
-      </CardTitle>
-      <CardDescription>Toplam {CATEGORY_OPTIONS.length} kategori</CardDescription>
-     </CardHeader>
-     <CardContent>
-      <ul className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-       {CATEGORY_OPTIONS.map((cat) => (
-        <li key={cat}>
-         <button
-          type="button"
-          onClick={() => {
-           setFilterCategory((prev) => (prev === cat ? "" : cat));
-           setShowCategoryList(false);
-          }}
-          className={cn(
-           "flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors hover:bg-muted/50",
-           filterCategory === cat ? "border-primary bg-primary/10" : "bg-muted/30"
-          )}
-         >
-          <div>
-           <p className="font-medium text-foreground">{categoryInfo[cat]?.title ?? cat}</p>
-          </div>
-          <span className="text-sm font-semibold text-muted-foreground">
-           {products.filter((p) => p.category === cat).length} ürün
-          </span>
-         </button>
-        </li>
-       ))}
-      </ul>
-     </CardContent>
-    </Card>
-   )}
+   <ProductStats
+    products={products}
+    stats={stats}
+    filterCategory={filterCategory}
+    filterStock={filterStock}
+    filterFeatured={filterFeatured}
+    filterNew={filterNew}
+    filterDiscounted={filterDiscounted}
+    showCategoryList={showCategoryList}
+    onFilterCategory={setFilterCategory}
+    onFilterStock={setFilterStock}
+    onFilterFeatured={setFilterFeatured}
+    onFilterNew={setFilterNew}
+    onFilterDiscounted={setFilterDiscounted}
+    onToggleCategoryList={setShowCategoryList}
+   />
 
    {message.text && (
     <Alert variant={message.type === "error" ? "destructive" : "default"} className="rounded-xl">
@@ -597,190 +445,23 @@ export default function UrunYonetimiPage() {
     </Alert>
    )}
 
-   {/* Arama */}
-   <div className="relative">
-    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-    <Input
-     type="text"
-     placeholder="Ürün adı, kategori veya marka ile ara..."
-     value={searchQuery}
-     onChange={(e) => setSearchQuery(e.target.value)}
-     className="h-11 rounded-xl pl-10 bg-muted/30 border-input/80 focus:bg-background"
-    />
-   </div>
+   <ProductSearchBar
+    value={searchQuery}
+    onChange={setSearchQuery}
+   />
 
-   {/* Ürün tablosu */}
-   <Card className="overflow-hidden">
-    <CardContent className="p-0">
-     {productsLoading ? (
-      <div className="flex items-center justify-center gap-3 py-16">
-       <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-       <p className="text-sm text-muted-foreground">Ürünler yükleniyor…</p>
-      </div>
-     ) : filteredProducts.length === 0 ? (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-       <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-muted">
-        <Package className="size-7 text-muted-foreground" />
-       </div>
-       <p className="text-sm font-medium text-foreground">
-        {products.length === 0 ? "Henüz ürün yok" : "Sonuç bulunamadı"}
-       </p>
-       <p className="mt-1 text-sm text-muted-foreground">
-        {products.length === 0
-         ? "\"Yeni Ürün Ekle\" butonu ile başlayın."
-         : `"${searchQuery}" için eşleşen ürün bulunamadı.`}
-       </p>
-      </div>
-     ) : (
-      <>
-       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px]">
-         <thead>
-          <tr className="border-b bg-muted/40">
-           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Ürün
-           </th>
-           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Kategori
-           </th>
-           <th className="px-4 py-3.5 text-left">
-            <button
-             type="button"
-             onClick={() => toggleSort("price")}
-             className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none hover:bg-muted/60 transition-colors rounded px-1 -mx-1 py-0.5 inline-flex items-center gap-1"
-            >
-             Fiyat (₺)
-             {sortBy === "price_asc" && <ArrowUp className="size-3.5" />}
-             {sortBy === "price_desc" && <ArrowDown className="size-3.5" />}
-            </button>
-           </th>
-           <th className="px-4 py-3.5 text-left">
-            <button
-             type="button"
-             onClick={() => toggleSort("stock")}
-             className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none hover:bg-muted/60 transition-colors rounded px-1 -mx-1 py-0.5 inline-flex items-center gap-1"
-            >
-             Stok
-             {sortBy === "stock_asc" && <ArrowUp className="size-3.5" />}
-             {sortBy === "stock_desc" && <ArrowDown className="size-3.5" />}
-            </button>
-           </th>
-           <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Durum
-           </th>
-           <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            İşlemler
-           </th>
-          </tr>
-         </thead>
-         <tbody>
-          {filteredProducts.map((p) => (
-           <tr
-            key={p.id}
-            className={cn(
-             "border-b border-border/50 transition-colors hover:bg-muted/20",
-             editingId === p.id && "bg-primary/5"
-            )}
-           >
-            <td className="px-4 py-3.5">
-             <div className="flex items-center gap-3">
-              <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border bg-muted">
-               {p.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image} alt="" className="h-full w-full object-cover" />
-               ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                 <ImageIcon className="size-5 text-muted-foreground/50" />
-                </div>
-               )}
-              </div>
-              <div className="min-w-0">
-               <p className="font-semibold text-foreground text-sm">{p.name}</p>
-               {p.brand && (
-                <p className="text-xs text-muted-foreground truncate">{p.brand}</p>
-               )}
-              </div>
-             </div>
-            </td>
-            <td className="px-4 py-3.5">
-             <p className="text-sm font-medium text-foreground">
-              {categoryInfo[p.category]?.title ?? p.category}
-             </p>
-            </td>
-            <td className="px-4 py-3.5">
-             <p className="text-sm font-bold text-foreground">{formatPrice(p.price)}</p>
-             {p.oldPrice != null && (
-              <p className="text-xs text-muted-foreground line-through">{formatPrice(p.oldPrice)}</p>
-             )}
-            </td>
-            <td className="px-4 py-3.5">
-             <p className="text-sm font-medium tabular-nums">{p.stock ?? 0}</p>
-            </td>
-            <td className="px-4 py-3.5">
-             <div className="flex flex-wrap gap-1.5">
-              {p.inStock ? (
-               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                <Check className="size-3" /> Stokta
-               </span>
-              ) : (
-               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                Stokta yok
-               </span>
-              )}
-              {p.isFeatured && (
-               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                <Star className="size-3" /> Öne Çıkan
-               </span>
-              )}
-              {p.isNew && (
-               <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                Yeni
-               </span>
-              )}
-             </div>
-            </td>
-            <td className="px-4 py-3.5 text-right">
-             <div className="flex items-center justify-end gap-1">
-              <Button
-               type="button"
-               variant="outline"
-               size="sm"
-               className="gap-1.5 rounded-lg text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 dark:border-blue-800 dark:hover:bg-blue-950/50"
-               onClick={() => startEdit(p)}
-               title="Düzenle"
-              >
-               <Pencil className="size-3.5" /> Düzenle
-              </Button>
-              <Button
-               type="button"
-               variant="outline"
-               size="sm"
-               className="gap-1.5 rounded-lg text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:hover:bg-red-950/50"
-               disabled={deletingId === p.id}
-               onClick={() => deleteProduct(p)}
-               title="Sil"
-              >
-               {deletingId === p.id ? (
-                <span className="size-3.5 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-               ) : (
-                <Trash2 className="size-3.5" />
-               )}{" "}
-               Sil
-              </Button>
-             </div>
-            </td>
-           </tr>
-          ))}
-         </tbody>
-        </table>
-       </div>
-       <div className="border-t bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{filteredProducts.length}</span> ürün listeleniyor
-       </div>
-      </>
-     )}
-    </CardContent>
-   </Card>
+   <ProductTable
+    products={filteredProducts}
+    loading={productsLoading}
+    searchQuery={searchQuery}
+    editingId={editingId}
+    deletingId={deletingId}
+    sortBy={sortBy}
+    onSortPrice={() => toggleSort("price")}
+    onSortStock={() => toggleSort("stock")}
+    onEdit={startEdit}
+    onDelete={deleteProduct}
+   />
 
    {showForm && (
     <div ref={formCardRef}>
