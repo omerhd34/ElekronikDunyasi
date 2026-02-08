@@ -1,7 +1,7 @@
 "use client";
 
 import AdminPageHero from "@/components/admin/AdminPageHero";
-import OrdersEmptyCard from "@/components/admin/last-orders/OrdersEmptyCard";
+import OrdersEmptyCard from "@/components/admin/son-siparisler/OrdersEmptyCard";
 
 export default function SonSiparislerPage() {
   return (

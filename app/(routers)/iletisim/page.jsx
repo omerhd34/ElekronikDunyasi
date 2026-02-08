@@ -6,7 +6,8 @@ import AdresCard from "@/components/contact/AdresCard";
 import IletisimCard from "@/components/contact/IletisimCard";
 import SaatlerCard from "@/components/contact/SaatlerCard";
 import ContactForm from "@/components/contact/ContactForm";
-import MapAndImageSection from "@/components/contact/MapAndImageSection";
+import MapCard from "@/components/contact/MapCard";
+import StoreImageCard from "@/components/contact/StoreImageCard";
 import ImageLightbox from "@/components/contact/ImageLightbox";
 import { suanAcikMi } from "@/components/contact/utils";
 
@@ -21,19 +22,20 @@ export default function IletisimPage() {
    <IletisimHero />
 
    <div className="container px-4 py-10 md:py-14">
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 -mt-12 relative z-10 mb-12 items-stretch">
-     <AdresCard />
-     <IletisimCard />
-     <SaatlerCard acik={acik} />
-    </div>
-
-    <div className="grid gap-10 lg:grid-cols-[2fr_3fr] lg:items-stretch lg:h-[520px]">
-     <div className="flex flex-col h-full min-h-0">
-      <ContactForm />
+    <div className="space-y-6 -mt-12 relative z-10">
+     <div className="grid grid-cols-1 lg:grid-cols-[4fr_6fr] gap-4 items-stretch">
+      <AdresCard />
+      <MapCard />
      </div>
 
-     <div className="h-full min-h-[280px] sm:min-h-[360px] lg:min-h-0">
-      <MapAndImageSection onImageClick={() => setLightboxOpen(true)} />
+     <div className="grid grid-cols-1 lg:grid-cols-[4fr_6fr] gap-4 items-stretch">
+      <SaatlerCard acik={acik} />
+      <StoreImageCard onImageClick={() => setLightboxOpen(true)} />
+     </div>
+
+     <div className="grid grid-cols-1 lg:grid-cols-[4fr_6fr] gap-4 items-stretch">
+      <IletisimCard />
+      <ContactForm />
      </div>
     </div>
    </div>

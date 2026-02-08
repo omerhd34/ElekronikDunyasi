@@ -22,10 +22,10 @@ import {
 import { categoryInfo } from "@/lib/product-utils";
 import { ChevronDown, ChevronUp, Plus, Trash2, X, Package, DollarSign, ImageIcon, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CATEGORY_OPTIONS, MAX_IMAGES, emptyForm, generateSlug } from "@/components/admin/product-management/productConstants";
-import ProductStats from "@/components/admin/product-management/ProductStats";
-import ProductSearchBar from "@/components/admin/product-management/ProductSearchBar";
-import ProductTable from "@/components/admin/product-management/ProductTable";
+import { CATEGORY_OPTIONS, MAX_IMAGES, emptyForm, generateSlug } from "@/components/admin/urun-yonetimi/productConstants";
+import ProductStats from "@/components/admin/urun-yonetimi/ProductStats";
+import ProductSearchBar from "@/components/admin/urun-yonetimi/ProductSearchBar";
+import ProductTable from "@/components/admin/urun-yonetimi/ProductTable";
 
 export default function UrunYonetimiPage() {
  const [products, setProducts] = useState([]);

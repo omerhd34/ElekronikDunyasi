@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import AdminPageHero from "@/components/admin/AdminPageHero";
-import MessageList from "@/components/admin/messages/MessageList";
+import MessageList from "@/components/admin/mesajlar/MessageList";
 
 export default function MesajlarPage() {
   const [messages, setMessages] = useState([]);
