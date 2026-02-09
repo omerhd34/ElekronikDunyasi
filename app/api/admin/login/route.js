@@ -37,7 +37,6 @@ export async function POST(request) {
 
   return NextResponse.json({ success: true });
  } catch (error) {
-  console.error("POST /api/admin/login", error);
   return NextResponse.json(
    { error: "Giriş yapılamadı." },
    { status: 500 }

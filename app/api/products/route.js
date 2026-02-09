@@ -33,7 +33,6 @@ export async function GET(request) {
   const products = list.map(normalizeProduct).filter(Boolean);
   return NextResponse.json(products);
  } catch (error) {
-  console.error("GET /api/products", error);
   return NextResponse.json(
    { error: "Ürünler yüklenemedi" },
    { status: 500 }
@@ -179,7 +178,6 @@ export async function POST(request) {
 
   return NextResponse.json(normalizeProduct(product));
  } catch (error) {
-  console.error("POST /api/products", error);
   return NextResponse.json(
    { error: error.message || "Ürün eklenemedi" },
    { status: 500 }

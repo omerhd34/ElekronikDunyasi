@@ -70,7 +70,6 @@ export async function POST(request) {
    },
   });
  } catch (error) {
-  console.error("POST /api/auth/register", error);
   return NextResponse.json(
    { error: "Kayıt oluşturulamadı." },
    { status: 500 }

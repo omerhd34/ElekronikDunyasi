@@ -14,7 +14,6 @@ export async function GET() {
   const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
   return NextResponse.json(map);
  } catch (error) {
-  console.error("GET /api/admin/settings", error);
   return NextResponse.json(
    { error: "Ayarlar alınamadı." },
    { status: 500 }
@@ -79,7 +78,6 @@ export async function PATCH(req) {
   const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
   return NextResponse.json(map);
  } catch (error) {
-  console.error("PATCH /api/admin/settings", error);
   return NextResponse.json(
    { error: "Ayarlar güncellenemedi." },
    { status: 500 }

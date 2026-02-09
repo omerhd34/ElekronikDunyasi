@@ -14,7 +14,6 @@ export async function GET() {
   const count = await prisma.customer.count();
   return NextResponse.json({ count });
  } catch (error) {
-  console.error("GET /api/admin/customers", error);
   return NextResponse.json(
    { error: "Müşteri sayısı alınamadı." },
    { status: 500 }

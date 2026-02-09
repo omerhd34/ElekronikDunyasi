@@ -15,7 +15,6 @@ export async function GET() {
     : DEFAULT_SHIPPING_COST;
   return NextResponse.json({ shippingCost });
  } catch (error) {
-  console.error("GET /api/settings/shipping-cost", error);
   return NextResponse.json(
    { shippingCost: DEFAULT_SHIPPING_COST },
    { status: 200 }

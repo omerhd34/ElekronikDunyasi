@@ -19,7 +19,6 @@ export async function GET(_request, { params }) {
   }
   return NextResponse.json(normalizeProduct(product));
  } catch (error) {
-  console.error("GET /api/products/[slug]", error);
   return NextResponse.json(
    { error: "Ürün bulunamadı" },
    { status: 500 }

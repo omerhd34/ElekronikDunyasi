@@ -19,7 +19,6 @@ export async function GET() {
   const faqs = parseFaqs(setting?.value);
   return NextResponse.json(faqs);
  } catch (error) {
-  console.error("GET /api/settings/faqs", error);
   return NextResponse.json([], { status: 200 });
  }
 }

@@ -20,7 +20,6 @@ export async function GET() {
 
   return NextResponse.json({ count });
  } catch (error) {
-  console.error("GET /api/auth/orders/active-count", error);
   return NextResponse.json(
    { error: "Aktif sipariş sayısı alınamadı." },
    { status: 500 }

@@ -45,7 +45,6 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("PUT /api/auth/cards/[id]", error);
     return NextResponse.json(
       { error: "Kart güncellenemedi." },
       { status: 500 }
@@ -71,7 +70,6 @@ export async function DELETE(_request, { params }) {
     await prisma.customerCard.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /api/auth/cards/[id]", error);
     return NextResponse.json(
       { error: "Kart silinemedi." },
       { status: 500 }

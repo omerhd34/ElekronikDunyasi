@@ -16,7 +16,6 @@ export async function GET() {
 
   return NextResponse.json(addresses);
  } catch (error) {
-  console.error("GET /api/auth/addresses", error);
   return NextResponse.json(
    { error: "Adresler alınamadı." },
    { status: 500 }
@@ -69,7 +68,6 @@ export async function POST(request) {
 
   return NextResponse.json(addr);
  } catch (error) {
-  console.error("POST /api/auth/addresses", error);
   const isDev = process.env.NODE_ENV === "development";
   const msg =
    isDev && error?.message
